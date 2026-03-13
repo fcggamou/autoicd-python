@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "autoicd"
-version = "0.5.0"
+version = "0.6.0"
 description = "Official Python SDK for the AutoICD API — clinical text to ICD-10-CM and ICD-11 diagnosis codes, powered by AI and medical NLP. Includes ICD-10/ICD-11 crosswalk."
 readme = "README.md"
 license = "MIT"
