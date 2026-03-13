@@ -13,6 +13,8 @@ from autoicd import (
     CodeDetail,
     CodeOptions,
     CodeSearchResponse,
+    ICD11CodeDetailFull,
+    ICD11CodeSearchResponse,
     NotFoundError,
     RateLimitError,
     SearchOptions,
@@ -223,6 +225,120 @@ class TestCodesGet:
         assert isinstance(result, CodeDetail)
         assert result.code == "E11.9"
         assert result.is_billable is True
+        client.close()
+
+
+# ── icd11.search() ──────────────────────────────────────────────────
+
+
+class TestICD11Search:
+    def test_sends_get_with_query(self) -> None:
+        search_response = {
+            "query": "diabetes",
+            "count": 1,
+            "codes": [
+                {
+                    "code": "5A11",
+                    "short_description": "Type 2 diabetes mellitus",
+                    "long_description": "Type 2 diabetes mellitus",
+                    "foundation_uri": "http://id.who.int/icd/entity/1691003785",
+                }
+            ],
+        }
+        requests: list[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            return httpx.Response(200, json=search_response, headers=_RATE_LIMIT_HEADERS)
+
+        client = _make_client(httpx.MockTransport(handler))
+        result = client.icd11.search("diabetes")
+
+        assert requests[0].method == "GET"
+        assert "q=diabetes" in str(requests[0].url)
+        assert "/api/v1/icd11/codes/search" in str(requests[0].url)
+        assert isinstance(result, ICD11CodeSearchResponse)
+        assert result.count == 1
+        assert result.codes[0].code == "5A11"
+        assert result.codes[0].foundation_uri == "http://id.who.int/icd/entity/1691003785"
+        client.close()
+
+    def test_includes_limit(self) -> None:
+        search_response = {"query": "diabetes", "count": 0, "codes": []}
+        requests: list[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            return httpx.Response(200, json=search_response, headers=_RATE_LIMIT_HEADERS)
+
+        client = _make_client(httpx.MockTransport(handler))
+        client.icd11.search("diabetes", options=SearchOptions(limit=5))
+
+        assert "limit=5" in str(requests[0].url)
+        client.close()
+
+
+# ── icd11.get() ─────────────────────────────────────────────────────
+
+
+class TestICD11Get:
+    def test_fetches_icd11_code_detail(self) -> None:
+        detail = {
+            "code": "5A11",
+            "short_description": "Type 2 diabetes mellitus",
+            "long_description": "Type 2 diabetes mellitus",
+            "foundation_uri": "http://id.who.int/icd/entity/1691003785",
+            "synonyms": {"index_terms": ["DM2", "NIDDM"]},
+            "cross_references": {"snomed": ["44054006"], "umls": ["C0011860"]},
+            "parent": {
+                "code": "5A1",
+                "short_description": "Diabetes mellitus",
+                "long_description": "Diabetes mellitus",
+                "foundation_uri": None,
+            },
+            "children": [],
+            "chapter": {"number": 5, "title": "Endocrine, nutritional or metabolic diseases"},
+            "block": "5A10-5A14",
+            "icd10_mappings": [
+                {
+                    "code": "E11.9",
+                    "description": "Type 2 diabetes mellitus without complications",
+                    "mapping_type": "equivalent",
+                    "system": "icd10",
+                }
+            ],
+        }
+        requests: list[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            return httpx.Response(200, json=detail, headers=_RATE_LIMIT_HEADERS)
+
+        client = _make_client(httpx.MockTransport(handler))
+        result = client.icd11.get("5A11")
+
+        assert requests[0].method == "GET"
+        assert "/api/v1/icd11/codes/5A11" in str(requests[0].url)
+        assert isinstance(result, ICD11CodeDetailFull)
+        assert result.code == "5A11"
+        assert result.foundation_uri == "http://id.who.int/icd/entity/1691003785"
+        assert result.parent is not None
+        assert result.parent.code == "5A1"
+        assert result.chapter is not None
+        assert result.chapter.number == 5
+        assert len(result.icd10_mappings) == 1
+        assert result.icd10_mappings[0].code == "E11.9"
+        assert result.icd10_mappings[0].mapping_type == "equivalent"
+        assert result.cross_references == {"snomed": ["44054006"], "umls": ["C0011860"]}
+        client.close()
+
+    def test_404_raises_not_found(self) -> None:
+        client = _make_client(
+            _mock_transport(status=404, json_body={"error": "Code not found"})
+        )
+        with pytest.raises(NotFoundError) as exc:
+            client.icd11.get("INVALID")
+        assert exc.value.status == 404
         client.close()
 
 

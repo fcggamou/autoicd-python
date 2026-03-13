@@ -311,6 +311,7 @@ def _parse_code_detail_full(data: dict[str, Any]) -> CodeDetailFull:
         long_description=data["long_description"],
         is_billable=data["is_billable"],
         synonyms=data.get("synonyms", {}),
+        cross_references=data.get("cross_references", {}),
         parent=parent,
         children=children,
         chapter=chapter,
