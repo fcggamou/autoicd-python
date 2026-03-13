@@ -166,10 +166,10 @@ class TestCode:
         client.close()
 
 
-# ── codes.search() ──────────────────────────────────────────────────
+# ── icd10.search() ──────────────────────────────────────────────────
 
 
-class TestCodesSearch:
+class TestICD10CodesSearch:
     def test_sends_get_with_query(self) -> None:
         search_response = {"query": "diabetes", "count": 1, "codes": []}
         requests: list[httpx.Request] = []
@@ -179,7 +179,7 @@ class TestCodesSearch:
             return httpx.Response(200, json=search_response, headers=_RATE_LIMIT_HEADERS)
 
         client = _make_client(httpx.MockTransport(handler))
-        result = client.codes.search("diabetes")
+        result = client.icd10.search("diabetes")
 
         assert requests[0].method == "GET"
         assert "q=diabetes" in str(requests[0].url)
@@ -195,16 +195,16 @@ class TestCodesSearch:
             return httpx.Response(200, json=search_response, headers=_RATE_LIMIT_HEADERS)
 
         client = _make_client(httpx.MockTransport(handler))
-        client.codes.search("diabetes", options=SearchOptions(limit=5))
+        client.icd10.search("diabetes", options=SearchOptions(limit=5))
 
         assert "limit=5" in str(requests[0].url)
         client.close()
 
 
-# ── codes.get() ─────────────────────────────────────────────────────
+# ── icd10.get() ─────────────────────────────────────────────────────
 
 
-class TestCodesGet:
+class TestICD10CodesGet:
     def test_url_encodes_code(self) -> None:
         detail = {
             "code": "E11.9",
@@ -219,7 +219,7 @@ class TestCodesGet:
             return httpx.Response(200, json=detail, headers=_RATE_LIMIT_HEADERS)
 
         client = _make_client(httpx.MockTransport(handler))
-        result = client.codes.get("E11.9")
+        result = client.icd10.get("E11.9")
 
         assert requests[0].method == "GET"
         assert isinstance(result, CodeDetail)
@@ -389,7 +389,7 @@ class TestErrors:
             _mock_transport(status=404, json_body={"error": "Code not found"})
         )
         with pytest.raises(NotFoundError) as exc:
-            client.codes.get("ZZZZZ")
+            client.icd10.get("ZZZZZ")
         assert exc.value.status == 404
         client.close()
 

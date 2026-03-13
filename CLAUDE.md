@@ -17,7 +17,7 @@ ruff format src/ tests/  # Format
 ```
 src/autoicd/
 ├── __init__.py   — Public exports (re-exports client, types, errors)
-├── client.py     — AutoICD class + Codes sub-resource + HTTP internals
+├── client.py     — AutoICD class + ICD10/ICD11 sub-resources + HTTP internals
 ├── types.py      — All request/response dataclasses
 └── errors.py     — AutoICDError hierarchy (401, 404, 429)
 tests/
@@ -34,11 +34,13 @@ tests/
 ```python
 client = AutoICD(api_key="sk_...")
 
-client.code(text, options?)       # POST /api/v1/code — clinical text → ICD-10 codes
-client.anonymize(text)            # POST /api/v1/anonymize — PHI de-identification
-client.codes.search(query, opts?) # GET  /api/v1/codes/search — search ICD-10 codes
-client.codes.get(code)            # GET  /api/v1/codes/:code — code details
-client.last_rate_limit            # Rate limit info from last response
+client.code(text, options?)        # POST /api/v1/code — clinical text → ICD-10 codes
+client.anonymize(text)             # POST /api/v1/anonymize — PHI de-identification
+client.icd10.search(query, opts?)  # GET  /api/v1/icd10/codes/search — search ICD-10 codes
+client.icd10.get(code)             # GET  /api/v1/icd10/codes/:code — code details
+client.icd11.search(query, opts?)  # GET  /api/v1/icd11/codes/search — search ICD-11 codes
+client.icd11.get(code)             # GET  /api/v1/icd11/codes/:code — code details
+client.last_rate_limit             # Rate limit info from last response
 ```
 
 ## Conventions

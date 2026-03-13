@@ -37,7 +37,7 @@ _DEFAULT_BASE_URL = "https://autoicdapi.com"
 _DEFAULT_TIMEOUT = 30.0
 
 
-class Codes:
+class ICD10Codes:
     """Sub-resource for ICD-10-CM code lookups."""
 
     def __init__(self, client: AutoICD) -> None:
@@ -53,7 +53,7 @@ class Codes:
                 params["limit"] = str(options.limit)
             if options.offset is not None:
                 params["offset"] = str(options.offset)
-        data = self._client._get(f"/api/v1/codes/search?{urlencode(params)}")
+        data = self._client._get(f"/api/v1/icd10/codes/search?{urlencode(params)}")
         return CodeSearchResponse(
             query=data["query"],
             count=data["count"],
@@ -66,7 +66,7 @@ class Codes:
         Returns comprehensive info including synonyms (SNOMED CT, UMLS),
         hierarchy (parent/children), and chapter/block classification.
         """
-        data = self._client._get(f"/api/v1/codes/{quote(code, safe='')}")
+        data = self._client._get(f"/api/v1/icd10/codes/{quote(code, safe='')}")
         return _parse_code_detail_full(data)
 
 
@@ -130,7 +130,7 @@ class AutoICD:
         self._timeout = timeout
         self._owns_client = http_client is None
         self._http = http_client or httpx.Client(timeout=self._timeout)
-        self.codes = Codes(self)
+        self.icd10 = ICD10Codes(self)
         self.icd11 = ICD11Codes(self)
         self.last_rate_limit: RateLimit | None = None
 

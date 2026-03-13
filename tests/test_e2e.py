@@ -215,7 +215,7 @@ class TestCodesSearchEndpoint:
     def test_response_matches_search_response_shape(self, client: AutoICD) -> None:
         from autoicd import SearchOptions
 
-        result = client.codes.search("diabetes", options=SearchOptions(limit=5))
+        result = client.icd10.search("diabetes", options=SearchOptions(limit=5))
 
         assert isinstance(result, CodeSearchResponse)
         assert result.query == "diabetes"
@@ -230,7 +230,7 @@ class TestCodesSearchEndpoint:
 
 class TestCodesGetEndpoint:
     def test_response_matches_code_detail_full_shape(self, client: AutoICD) -> None:
-        result = client.codes.get("E11.9")
+        result = client.icd10.get("E11.9")
 
         assert isinstance(result, CodeDetailFull)
         assert_code_detail_full(result)
@@ -252,7 +252,7 @@ class TestCodesGetEndpoint:
         import httpx
 
         raw = httpx.get(
-            "https://autoicdapi.com/api/v1/codes/I10",
+            "https://autoicdapi.com/api/v1/icd10/codes/I10",
             headers={"Authorization": f"Bearer {API_KEY}"},
             timeout=60.0,
         )
@@ -261,6 +261,7 @@ class TestCodesGetEndpoint:
         allowed = {
             "code", "short_description", "long_description", "is_billable",
             "synonyms", "cross_references", "parent", "children", "chapter", "block",
+            "icd11_mappings",
         }
         assert set(data.keys()) <= allowed, f"Unexpected fields: {set(data.keys()) - allowed}"
 
@@ -269,7 +270,7 @@ class TestRateLimitParsing:
     def test_rate_limit_headers_are_parsed(self, client: AutoICD) -> None:
         from autoicd import SearchOptions
 
-        client.codes.search("test", options=SearchOptions(limit=1))
+        client.icd10.search("test", options=SearchOptions(limit=1))
 
         assert client.last_rate_limit is not None
         assert isinstance(client.last_rate_limit.limit, int)

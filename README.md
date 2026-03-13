@@ -106,11 +106,11 @@ result = client.code(
 Search the full ICD-10-CM 2025 code set by description. Perfect for building code lookup UIs, autocomplete fields, and validation workflows.
 
 ```python
-results = client.codes.search("diabetes mellitus")
+results = client.icd10.search("diabetes mellitus")
 # results.codes → [CodeDetail(code="E11.9", short_description="...", ...), ...]
 
 from autoicd import SearchOptions
-results = client.codes.search("heart failure", options=SearchOptions(limit=5))
+results = client.icd10.search("heart failure", options=SearchOptions(limit=5))
 ```
 
 ### ICD-10 Code Details
@@ -118,7 +118,7 @@ results = client.codes.search("heart failure", options=SearchOptions(limit=5))
 Get full details for any ICD-10-CM code — descriptions, billable status, synonyms, hierarchy, and chapter classification.
 
 ```python
-detail = client.codes.get("E11.9")
+detail = client.icd10.get("E11.9")
 print(detail.code)              # "E11.9"
 print(detail.long_description)  # "Type 2 diabetes mellitus without complications"
 print(detail.is_billable)       # True
@@ -159,7 +159,7 @@ for mapping in detail.icd10_mappings:
 ICD-10 code details now include ICD-11 crosswalk mappings when available:
 
 ```python
-detail = client.codes.get("E11.9")
+detail = client.icd10.get("E11.9")
 for mapping in detail.icd11_mappings:
     print(f"{mapping.code} — {mapping.description}")
     # "5A11 — Type 2 diabetes mellitus"
@@ -281,8 +281,8 @@ Full REST API documentation at [autoicdapi.com/docs](https://autoicdapi.com/docs
 |--------|-------------|
 | `client.code(text, options?)` | Code clinical text to ICD-10-CM diagnoses |
 | `client.anonymize(text)` | De-identify PHI/PII in clinical text |
-| `client.codes.search(query, options?)` | Search ICD-10-CM codes by description |
-| `client.codes.get(code)` | Get details for an ICD-10-CM code (incl. ICD-11 crosswalk) |
+| `client.icd10.search(query, options?)` | Search ICD-10-CM codes by description |
+| `client.icd10.get(code)` | Get details for an ICD-10-CM code (incl. ICD-11 crosswalk) |
 | `client.icd11.search(query, options?)` | Search ICD-11 codes by description |
 | `client.icd11.get(code)` | Get details for an ICD-11 code (incl. ICD-10 crosswalk) |
 
