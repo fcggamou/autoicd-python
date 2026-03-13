@@ -173,8 +173,8 @@ class CodeDetailFull(CodeDetail):
     block: str | None = None
     """Code block range (e.g. ``"E08-E13"``)."""
 
-    icd11_mappings: list[CrosswalkMapping] | None = None
-    """ICD-11 crosswalk mappings (present when ICD-11 data is available)."""
+    icd11_mappings: list[CrosswalkMapping] = field(default_factory=list)
+    """ICD-11 crosswalk mappings for this ICD-10 code."""
 
 
 @dataclass

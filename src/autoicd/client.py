@@ -303,7 +303,7 @@ def _parse_code_detail_full(data: dict[str, Any]) -> CodeDetailFull:
     chapter = ChapterInfo(**chapter_data) if chapter_data else None
 
     icd11_raw = data.get("icd11_mappings")
-    icd11_mappings = _parse_crosswalk_mappings(icd11_raw) if icd11_raw else None
+    icd11_mappings = _parse_crosswalk_mappings(icd11_raw) if icd11_raw else []
 
     return CodeDetailFull(
         code=data["code"],
