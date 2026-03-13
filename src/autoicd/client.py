@@ -23,6 +23,12 @@ from .types import (
     CodeSearchResponse,
     CodingEntity,
     CodingResponse,
+    CrosswalkMapping,
+    ICD11ChapterInfo,
+    ICD11CodeDetail,
+    ICD11CodeDetailFull,
+    ICD11CodeSearchResponse,
+    ICD11CodeSearchResult,
     PIIEntity,
     SearchOptions,
 )
@@ -65,6 +71,39 @@ class Codes:
 
 
 
+class ICD11Codes:
+    """Sub-resource for ICD-11 code lookups."""
+
+    def __init__(self, client: AutoICD) -> None:
+        self._client = client
+
+    def search(
+        self, query: str, options: SearchOptions | None = None
+    ) -> ICD11CodeSearchResponse:
+        """Search ICD-11 codes by description."""
+        params: dict[str, str] = {"q": query}
+        if options:
+            if options.limit is not None:
+                params["limit"] = str(options.limit)
+            if options.offset is not None:
+                params["offset"] = str(options.offset)
+        data = self._client._get(f"/api/v1/icd11/codes/search?{urlencode(params)}")
+        return ICD11CodeSearchResponse(
+            query=data["query"],
+            count=data["count"],
+            codes=[ICD11CodeSearchResult(**c) for c in data["codes"]],
+        )
+
+    def get(self, code: str) -> ICD11CodeDetailFull:
+        """Get full details for an ICD-11 code.
+
+        Returns comprehensive info including synonyms, hierarchy (parent/children),
+        chapter/block classification, and ICD-10 crosswalk mappings.
+        """
+        data = self._client._get(f"/api/v1/icd11/codes/{quote(code, safe='')}")
+        return _parse_icd11_code_detail_full(data)
+
+
 class AutoICD:
     """Client for the AutoICD API.
 
@@ -92,6 +131,7 @@ class AutoICD:
         self._owns_client = http_client is None
         self._http = http_client or httpx.Client(timeout=self._timeout)
         self.codes = Codes(self)
+        self.icd11 = ICD11Codes(self)
         self.last_rate_limit: RateLimit | None = None
 
     def close(self) -> None:
@@ -122,6 +162,8 @@ class AutoICD:
                 body["top_k"] = options.top_k
             if options.include_negated is not None:
                 body["include_negated"] = options.include_negated
+            if options.output_system is not None:
+                body["output_system"] = options.output_system
         data = self._post("/api/v1/code", body)
         return _parse_coding_response(data)
 
@@ -247,6 +289,10 @@ def _parse_coding_response(data: dict[str, Any]) -> CodingResponse:
     )
 
 
+def _parse_crosswalk_mappings(data: list[dict[str, Any]]) -> list[CrosswalkMapping]:
+    return [CrosswalkMapping(**m) for m in data]
+
+
 def _parse_code_detail_full(data: dict[str, Any]) -> CodeDetailFull:
     parent_data = data.get("parent")
     parent = CodeDetail(**parent_data) if parent_data else None
@@ -256,14 +302,45 @@ def _parse_code_detail_full(data: dict[str, Any]) -> CodeDetailFull:
     chapter_data = data.get("chapter")
     chapter = ChapterInfo(**chapter_data) if chapter_data else None
 
+    icd11_raw = data.get("icd11_mappings")
+    icd11_mappings = _parse_crosswalk_mappings(icd11_raw) if icd11_raw else None
+
     return CodeDetailFull(
         code=data["code"],
         short_description=data["short_description"],
         long_description=data["long_description"],
         is_billable=data["is_billable"],
         synonyms=data.get("synonyms", {}),
+        cross_references=data.get("cross_references", {}),
         parent=parent,
         children=children,
         chapter=chapter,
         block=data.get("block"),
+        icd11_mappings=icd11_mappings,
+    )
+
+
+def _parse_icd11_code_detail_full(data: dict[str, Any]) -> ICD11CodeDetailFull:
+    parent_data = data.get("parent")
+    parent = ICD11CodeDetail(**parent_data) if parent_data else None
+
+    children = [ICD11CodeDetail(**c) for c in data.get("children", [])]
+
+    chapter_data = data.get("chapter")
+    chapter = ICD11ChapterInfo(**chapter_data) if chapter_data else None
+
+    icd10_mappings = _parse_crosswalk_mappings(data.get("icd10_mappings", []))
+
+    return ICD11CodeDetailFull(
+        code=data["code"],
+        short_description=data["short_description"],
+        long_description=data["long_description"],
+        foundation_uri=data.get("foundation_uri"),
+        synonyms=data.get("synonyms", {}),
+        cross_references=data.get("cross_references", {}),
+        parent=parent,
+        children=children,
+        chapter=chapter,
+        block=data.get("block"),
+        icd10_mappings=icd10_mappings,
     )
