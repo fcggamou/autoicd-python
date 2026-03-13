@@ -1,6 +1,6 @@
 """AutoICD API — Python SDK.
 
-Official Python SDK for the AutoICD API: clinical text to ICD-10-CM diagnosis codes.
+Official Python SDK for the AutoICD API: clinical text to ICD-10-CM and ICD-11 diagnosis codes.
 """
 
 from .client import AutoICD
@@ -21,6 +21,12 @@ from .types import (
     CodeSearchResponse,
     CodingEntity,
     CodingResponse,
+    CrosswalkMapping,
+    ICD11ChapterInfo,
+    ICD11CodeDetail,
+    ICD11CodeDetailFull,
+    ICD11CodeSearchResponse,
+    ICD11CodeSearchResult,
     PIIEntity,
     SearchOptions,
 )
@@ -45,4 +51,11 @@ __all__ = [
     "PIIEntity",
     "AnonymizeResponse",
     "RateLimit",
+    # ICD-11 Types
+    "CrosswalkMapping",
+    "ICD11CodeDetail",
+    "ICD11ChapterInfo",
+    "ICD11CodeDetailFull",
+    "ICD11CodeSearchResult",
+    "ICD11CodeSearchResponse",
 ]

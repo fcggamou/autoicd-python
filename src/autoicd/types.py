@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-
 # ── Coding ──────────────────────────────────────────────────────────
 
 
@@ -16,6 +15,9 @@ class CodeOptions:
 
     include_negated: bool | None = None
     """Include negated conditions in results (default True)."""
+
+    output_system: str | None = None
+    """Output coding system: ``"icd10"`` (default) or ``"icd11"``."""
 
 
 @dataclass
@@ -132,6 +134,24 @@ class ChapterInfo:
 
 
 @dataclass
+class CrosswalkMapping:
+    """A crosswalk mapping between ICD-10 and ICD-11."""
+
+    code: str
+    """Mapped code (ICD-10 or ICD-11)."""
+
+    description: str
+    """Code description."""
+
+    mapping_type: str
+    """Mapping relationship: ``"equivalent"``, ``"narrower"``,
+    ``"broader"``, or ``"approximate"``."""
+
+    system: str
+    """Target coding system: ``"icd10"`` or ``"icd11"``."""
+
+
+@dataclass
 class CodeDetailFull(CodeDetail):
     """Comprehensive details for an ICD-10-CM code including hierarchy and synonyms."""
 
@@ -153,6 +173,9 @@ class CodeDetailFull(CodeDetail):
     block: str | None = None
     """Code block range (e.g. ``"E08-E13"``)."""
 
+    icd11_mappings: list[CrosswalkMapping] | None = None
+    """ICD-11 crosswalk mappings (present when ICD-11 data is available)."""
+
 
 @dataclass
 class CodeSearchResponse:
@@ -161,6 +184,89 @@ class CodeSearchResponse:
     query: str
     count: int
     codes: list[CodeDetail] = field(default_factory=list)
+
+
+# ── ICD-11 ──────────────────────────────────────────────────────────
+
+
+@dataclass
+class ICD11CodeDetail:
+    """Basic details for an ICD-11 code."""
+
+    code: str
+    """ICD-11 code (e.g. ``"5A11"``)."""
+
+    short_description: str
+    """Abbreviated description."""
+
+    long_description: str
+    """Full official description."""
+
+    foundation_uri: str | None
+    """ICD-11 Foundation URI, or ``None`` if unavailable."""
+
+
+@dataclass
+class ICD11ChapterInfo:
+    """ICD-11 chapter classification."""
+
+    number: int
+    """Chapter number."""
+
+    title: str
+    """Chapter title."""
+
+
+@dataclass
+class ICD11CodeDetailFull(ICD11CodeDetail):
+    """Comprehensive ICD-11 code details with hierarchy, synonyms, and ICD-10 mappings."""
+
+    synonyms: dict[str, list[str]] = field(default_factory=dict)
+    """Synonyms grouped by source."""
+
+    cross_references: dict[str, list[str]] = field(default_factory=dict)
+    """Cross-reference IDs grouped by source."""
+
+    parent: ICD11CodeDetail | None = None
+    """Parent code in the ICD-11 hierarchy, or ``None`` for top-level categories."""
+
+    children: list[ICD11CodeDetail] = field(default_factory=list)
+    """Direct child codes in the ICD-11 hierarchy."""
+
+    chapter: ICD11ChapterInfo | None = None
+    """ICD-11 chapter this code belongs to."""
+
+    block: str | None = None
+    """Block within the chapter."""
+
+    icd10_mappings: list[CrosswalkMapping] = field(default_factory=list)
+    """ICD-10 crosswalk mappings for this ICD-11 code."""
+
+
+@dataclass
+class ICD11CodeSearchResult:
+    """A single ICD-11 code search result."""
+
+    code: str
+    """ICD-11 code."""
+
+    short_description: str
+    """Abbreviated description."""
+
+    long_description: str
+    """Full official description."""
+
+    foundation_uri: str | None
+    """ICD-11 Foundation URI, or ``None`` if unavailable."""
+
+
+@dataclass
+class ICD11CodeSearchResponse:
+    """Search results for ICD-11 codes."""
+
+    query: str
+    count: int
+    codes: list[ICD11CodeSearchResult] = field(default_factory=list)
 
 
 # ── Anonymization ───────────────────────────────────────────────────
