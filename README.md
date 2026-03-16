@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 
-Official Python SDK for the [AutoICD API](https://autoicdapi.com) — clinical text to ICD-10-CM and ICD-11 diagnosis codes, powered by AI and medical NLP.
+Official Python SDK for the [AutoICD API](https://autoicdapi.com) — AI medical coding that converts clinical text to ICD-10-CM and ICD-11 diagnosis codes using medical NLP. Automate ICD-10 coding in your application.
 
 Single dependency (`httpx`). Works in **Python 3.10+**.
 
