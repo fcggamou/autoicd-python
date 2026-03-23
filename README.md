@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 
-Official Python SDK for the [AutoICD API](https://autoicdapi.com) — AI medical coding that converts clinical text to ICD-10-CM and ICD-11 diagnosis codes using medical NLP. Automate ICD-10 coding in your application.
+Official Python SDK for the [AutoICD API](https://autoicdapi.com) — AI medical coding that converts clinical text to ICD-10-CM, ICD-11, and ICF codes using medical NLP. Automate ICD-10 coding, ICF functioning classification, and disability assessment in your application.
 
 Single dependency (`httpx`). Works in **Python 3.10+**.
 
@@ -16,9 +16,10 @@ Single dependency (`httpx`). Works in **Python 3.10+**.
 
 | | |
 |---|---|
-| **AI-Powered ICD-10 & ICD-11 Coding** | Clinical NLP extracts diagnoses from free-text notes and maps them to ICD-10-CM or ICD-11 codes — no manual lookup required |
+| **AI-Powered ICD-10, ICD-11 & ICF Coding** | Clinical NLP extracts diagnoses from free-text notes and maps them to ICD-10-CM, ICD-11, or ICF codes — no manual lookup required |
 | **74,000+ ICD-10-CM Codes** | Full 2025 code set enriched with SNOMED CT synonyms for comprehensive matching |
 | **ICD-11 Support** | Search and look up ICD-11 codes, with full ICD-10 ↔ ICD-11 crosswalk mappings |
+| **ICF Functioning Codes** | Code clinical text to WHO ICF categories, search 1,400+ codes, and access Core Sets for 12+ conditions |
 | **Negation & Context Detection** | Knows the difference between "patient has diabetes" and "patient denies diabetes" — flags negated, historical, uncertain, and family-history mentions |
 | **PHI De-identification** | HIPAA-compliant anonymization of names, dates, SSNs, phone numbers, emails, addresses, MRNs, and ages |
 | **Confidence Scoring** | Every code match includes a similarity score and confidence level so you can set your own acceptance thresholds |
@@ -165,6 +166,27 @@ for mapping in detail.icd11_mappings:
     # "5A11 — Type 2 diabetes mellitus"
 ```
 
+### ICF Functioning Codes
+
+Code clinical text to WHO ICF categories, look up codes, search, and access ICF Core Sets for 12+ conditions.
+
+```python
+# Code clinical text to ICF categories
+icf = client.icf.code("Patient with stroke and hemiplegia")
+print(icf.results[0].codes[0].code)  # "b730"
+
+# Look up an ICF code
+code = client.icf.lookup("d450")
+print(code.title)  # "Walking"
+
+# Search ICF codes
+results = client.icf.search("mobility")
+
+# Get ICF Core Set for a diagnosis
+core_set = client.icf.core_set("E11.9")
+print(core_set.condition_name)  # "Diabetes Mellitus"
+```
+
 ### PHI De-identification
 
 Strip protected health information from clinical notes before storage or analysis. HIPAA-compliant de-identification for names, dates, SSNs, phone numbers, emails, addresses, MRNs, and ages.
@@ -285,6 +307,10 @@ Full REST API documentation at [autoicdapi.com/docs](https://autoicdapi.com/docs
 | `client.icd10.get(code)` | Get details for an ICD-10-CM code (incl. ICD-11 crosswalk) |
 | `client.icd11.search(query, options?)` | Search ICD-11 codes by description |
 | `client.icd11.get(code)` | Get details for an ICD-11 code (incl. ICD-10 crosswalk) |
+| `client.icf.code(text, options?)` | Code clinical text to ICF functioning categories |
+| `client.icf.lookup(code)` | Get details for an ICF code |
+| `client.icf.search(query, options?)` | Search ICF codes by keyword |
+| `client.icf.core_set(icd10_code)` | Get ICF Core Set for an ICD-10 diagnosis |
 
 ---
 
@@ -308,6 +334,10 @@ from autoicd import (
     ICD11CodeDetailFull,
     ICD11CodeSearchResponse,
     CrosswalkMapping,
+    ICFCodingResponse,
+    ICFCodeDetail,
+    ICFCodeSearchResponse,
+    ICFCoreSetResponse,
 )
 ```
 
