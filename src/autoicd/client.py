@@ -29,6 +29,13 @@ from .types import (
     ICD11CodeDetailFull,
     ICD11CodeSearchResponse,
     ICD11CodeSearchResult,
+    ICFCodeDetail,
+    ICFCodeResult,
+    ICFCodeSummary,
+    ICFCodingEntity,
+    ICFCodingResponse,
+    ICFCoreSetResult,
+    ICFSearchResponse,
     PIIEntity,
     SearchOptions,
 )
@@ -104,6 +111,57 @@ class ICD11Codes:
         return _parse_icd11_code_detail_full(data)
 
 
+class ICFCodes:
+    """Sub-resource for ICF code lookups and coding."""
+
+    def __init__(self, client: AutoICD) -> None:
+        self._client = client
+
+    def code(self, text: str, top_k: int = 5) -> ICFCodingResponse:
+        """Code clinical text to ICF codes.
+
+        Args:
+            text: Clinical note or free-text input.
+            top_k: Number of ICF candidates per entity (default 5).
+        """
+        data = self._client._post("/api/v1/icf/code", {"text": text, "top_k": top_k})
+        return _parse_icf_coding_response(data)
+
+    def lookup(self, code: str) -> ICFCodeDetail:
+        """Get full details for an ICF code.
+
+        Returns comprehensive info including definition, hierarchy
+        (parent/children), inclusions, exclusions, and index terms.
+        """
+        data = self._client._get(f"/api/v1/icf/codes/{quote(code, safe='')}")
+        return _parse_icf_code_detail(data)
+
+    def search(
+        self, query: str, limit: int = 20, offset: int = 0
+    ) -> ICFSearchResponse:
+        """Search ICF codes by description.
+
+        Args:
+            query: Search text.
+            limit: Maximum results (default 20).
+            offset: Pagination offset (default 0).
+        """
+        params: dict[str, str] = {"q": query, "limit": str(limit)}
+        if offset:
+            params["offset"] = str(offset)
+        data = self._client._get(f"/api/v1/icf/codes/search?{urlencode(params)}")
+        return _parse_icf_search_response(data)
+
+    def core_set(self, icd10_code: str) -> ICFCoreSetResult:
+        """Get the ICF Core Set for an ICD-10 diagnosis code.
+
+        Args:
+            icd10_code: An ICD-10-CM code (e.g. ``"M54.5"``).
+        """
+        data = self._client._get(f"/api/v1/icf/core-set/{quote(icd10_code, safe='')}")
+        return _parse_icf_core_set_result(data)
+
+
 class AutoICD:
     """Client for the AutoICD API.
 
@@ -132,6 +190,7 @@ class AutoICD:
         self._http = http_client or httpx.Client(timeout=self._timeout)
         self.icd10 = ICD10Codes(self)
         self.icd11 = ICD11Codes(self)
+        self.icf = ICFCodes(self)
         self.last_rate_limit: RateLimit | None = None
 
     def close(self) -> None:
@@ -343,4 +402,80 @@ def _parse_icd11_code_detail_full(data: dict[str, Any]) -> ICD11CodeDetailFull:
         chapter=chapter,
         block=data.get("block"),
         icd10_mappings=icd10_mappings,
+    )
+
+
+# ── ICF response parsing helpers ───────────────────────────────────
+
+
+def _parse_icf_code_summary(data: dict[str, Any]) -> ICFCodeSummary:
+    return ICFCodeSummary(
+        code=data["code"],
+        title=data["title"],
+        component=data["component"],
+        child_count=data.get("child_count", 0),
+    )
+
+
+def _parse_icf_code_detail(data: dict[str, Any]) -> ICFCodeDetail:
+    parent_data = data.get("parent")
+    parent = _parse_icf_code_summary(parent_data) if parent_data else None
+
+    children = [_parse_icf_code_summary(c) for c in data.get("children", [])]
+
+    return ICFCodeDetail(
+        code=data["code"],
+        title=data["title"],
+        definition=data.get("definition"),
+        component=data["component"],
+        chapter=data["chapter"],
+        parent=parent,
+        children=children,
+        inclusions=data.get("inclusions", []),
+        exclusions=data.get("exclusions", []),
+        index_terms=data.get("index_terms", []),
+    )
+
+
+def _parse_icf_code_result(data: dict[str, Any]) -> ICFCodeResult:
+    return ICFCodeResult(
+        code=data["code"],
+        description=data["description"],
+        component=data["component"],
+        similarity=data["similarity"],
+        confidence=data["confidence"],
+        matched_term=data["matched_term"],
+    )
+
+
+def _parse_icf_coding_entity(data: dict[str, Any]) -> ICFCodingEntity:
+    return ICFCodingEntity(
+        entity_text=data["entity_text"],
+        codes=[_parse_icf_code_result(c) for c in data.get("codes", [])],
+    )
+
+
+def _parse_icf_coding_response(data: dict[str, Any]) -> ICFCodingResponse:
+    return ICFCodingResponse(
+        text=data["text"],
+        provider=data["provider"],
+        entity_count=data["entity_count"],
+        results=[_parse_icf_coding_entity(e) for e in data.get("results", [])],
+    )
+
+
+def _parse_icf_search_response(data: dict[str, Any]) -> ICFSearchResponse:
+    return ICFSearchResponse(
+        query=data["query"],
+        count=data["count"],
+        codes=[_parse_icf_code_summary(c) for c in data.get("codes", [])],
+    )
+
+
+def _parse_icf_core_set_result(data: dict[str, Any]) -> ICFCoreSetResult:
+    return ICFCoreSetResult(
+        icd10_code=data["icd10_code"],
+        condition_name=data["condition_name"],
+        brief=[_parse_icf_code_summary(c) for c in data.get("brief", [])],
+        comprehensive=[_parse_icf_code_summary(c) for c in data.get("comprehensive", [])],
     )

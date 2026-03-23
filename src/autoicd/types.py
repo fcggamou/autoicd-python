@@ -269,6 +269,143 @@ class ICD11CodeSearchResponse:
     codes: list[ICD11CodeSearchResult] = field(default_factory=list)
 
 
+# ── ICF ────────────────────────────────────────────────────────────
+
+
+@dataclass
+class ICFCodeSummary:
+    """Lightweight ICF code reference."""
+
+    code: str
+    """ICF code (e.g. ``"b280"``)."""
+
+    title: str
+    """Code title."""
+
+    component: str
+    """ICF component: ``"b"``, ``"s"``, ``"d"``, or ``"e"``."""
+
+    child_count: int = 0
+    """Number of direct child codes."""
+
+
+@dataclass
+class ICFCodeDetail:
+    """Full ICF code details."""
+
+    code: str
+    """ICF code."""
+
+    title: str
+    """Code title."""
+
+    definition: str | None
+    """Full definition text, or ``None`` if not available."""
+
+    component: str
+    """ICF component."""
+
+    chapter: str
+    """Chapter this code belongs to."""
+
+    parent: ICFCodeSummary | None = None
+    """Parent code in the ICF hierarchy, or ``None`` for top-level."""
+
+    children: list[ICFCodeSummary] = field(default_factory=list)
+    """Direct child codes."""
+
+    inclusions: list[str] = field(default_factory=list)
+    """Inclusion notes."""
+
+    exclusions: list[str] = field(default_factory=list)
+    """Exclusion notes."""
+
+    index_terms: list[str] = field(default_factory=list)
+    """Index terms for this code."""
+
+
+@dataclass
+class ICFCodeResult:
+    """A single ICF code match."""
+
+    code: str
+    """Matched ICF code."""
+
+    description: str
+    """Code description."""
+
+    component: str
+    """ICF component."""
+
+    similarity: float
+    """0-1 cosine similarity score."""
+
+    confidence: str
+    """``"high"`` or ``"moderate"``."""
+
+    matched_term: str
+    """The index term that produced this match."""
+
+
+@dataclass
+class ICFCodingEntity:
+    """ICF coding results for one entity."""
+
+    entity_text: str
+    """Extracted text span."""
+
+    codes: list[ICFCodeResult] = field(default_factory=list)
+    """Ranked ICF code candidates."""
+
+
+@dataclass
+class ICFCodingResponse:
+    """Full ICF coding response."""
+
+    text: str
+    """Input text that was processed."""
+
+    provider: str
+    """Coding provider used."""
+
+    entity_count: int
+    """Total number of entities."""
+
+    results: list[ICFCodingEntity] = field(default_factory=list)
+    """Coding results per entity."""
+
+
+@dataclass
+class ICFSearchResponse:
+    """ICF code search results."""
+
+    query: str
+    """The search query that was used."""
+
+    count: int
+    """Number of results returned."""
+
+    codes: list[ICFCodeSummary] = field(default_factory=list)
+    """Matching ICF codes."""
+
+
+@dataclass
+class ICFCoreSetResult:
+    """ICF Core Set for an ICD-10 diagnosis."""
+
+    icd10_code: str
+    """ICD-10 code used to look up the core set."""
+
+    condition_name: str
+    """Condition name for this ICD-10 code."""
+
+    brief: list[ICFCodeSummary] = field(default_factory=list)
+    """Brief ICF Core Set codes."""
+
+    comprehensive: list[ICFCodeSummary] = field(default_factory=list)
+    """Comprehensive ICF Core Set codes."""
+
+
 # ── Anonymization ───────────────────────────────────────────────────
 
 

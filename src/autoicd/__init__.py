@@ -27,6 +27,13 @@ from .types import (
     ICD11CodeDetailFull,
     ICD11CodeSearchResponse,
     ICD11CodeSearchResult,
+    ICFCodeDetail,
+    ICFCodeResult,
+    ICFCodeSummary,
+    ICFCodingEntity,
+    ICFCodingResponse,
+    ICFCoreSetResult,
+    ICFSearchResponse,
     PIIEntity,
     SearchOptions,
 )
@@ -58,4 +65,12 @@ __all__ = [
     "ICD11CodeDetailFull",
     "ICD11CodeSearchResult",
     "ICD11CodeSearchResponse",
+    # ICF Types
+    "ICFCodeSummary",
+    "ICFCodeDetail",
+    "ICFCodeResult",
+    "ICFCodingEntity",
+    "ICFCodingResponse",
+    "ICFSearchResponse",
+    "ICFCoreSetResult",
 ]
