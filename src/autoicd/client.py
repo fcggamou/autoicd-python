@@ -35,6 +35,7 @@ from .types import (
     ICFCodingEntity,
     ICFCodingResponse,
     ICFCoreSetResult,
+    ICFCrossReference,
     ICFSearchResponse,
     PIIEntity,
     SearchOptions,
@@ -320,6 +321,10 @@ def _parse_code_match(data: dict[str, Any]) -> CodeMatch:
         similarity=data["similarity"],
         confidence=data["confidence"],
         matched_term=data["matched_term"],
+        icd11_codes=data.get("icd11_codes", []),
+        snomed_ids=data.get("snomed_ids", []),
+        umls_cuis=data.get("umls_cuis", []),
+        icf_categories=data.get("icf_categories", []),
     )
 
 
@@ -352,6 +357,14 @@ def _parse_crosswalk_mappings(data: list[dict[str, Any]]) -> list[CrosswalkMappi
     return [CrosswalkMapping(**m) for m in data]
 
 
+def _parse_icf_cross_reference(data: dict[str, Any]) -> ICFCrossReference:
+    return ICFCrossReference(
+        code=data["code"],
+        title=data["title"],
+        component=data["component"],
+    )
+
+
 def _parse_code_detail_full(data: dict[str, Any]) -> CodeDetailFull:
     parent_data = data.get("parent")
     parent = CodeDetail(**parent_data) if parent_data else None
@@ -376,6 +389,10 @@ def _parse_code_detail_full(data: dict[str, Any]) -> CodeDetailFull:
         chapter=chapter,
         block=data.get("block"),
         icd11_mappings=icd11_mappings,
+        icf_categories=[
+            _parse_icf_cross_reference(c)
+            for c in data.get("icf_categories", [])
+        ],
     )
 
 
@@ -402,6 +419,10 @@ def _parse_icd11_code_detail_full(data: dict[str, Any]) -> ICD11CodeDetailFull:
         chapter=chapter,
         block=data.get("block"),
         icd10_mappings=icd10_mappings,
+        icf_categories=[
+            _parse_icf_cross_reference(c)
+            for c in data.get("icf_categories", [])
+        ],
     )
 
 
@@ -434,6 +455,9 @@ def _parse_icf_code_detail(data: dict[str, Any]) -> ICFCodeDetail:
         inclusions=data.get("inclusions", []),
         exclusions=data.get("exclusions", []),
         index_terms=data.get("index_terms", []),
+        icd10_mappings=_parse_crosswalk_mappings(data.get("icd10_mappings", [])),
+        icd11_mappings=_parse_crosswalk_mappings(data.get("icd11_mappings", [])),
+        cross_references=data.get("cross_references", {}),
     )
 
 
@@ -445,6 +469,10 @@ def _parse_icf_code_result(data: dict[str, Any]) -> ICFCodeResult:
         similarity=data["similarity"],
         confidence=data["confidence"],
         matched_term=data["matched_term"],
+        icd10_codes=data.get("icd10_codes", []),
+        icd11_codes=data.get("icd11_codes", []),
+        snomed_ids=data.get("snomed_ids", []),
+        umls_cuis=data.get("umls_cuis", []),
     )
 
 

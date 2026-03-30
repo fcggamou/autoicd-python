@@ -39,6 +39,18 @@ class CodeMatch:
     matched_term: str
     """The index term that produced this match."""
 
+    icd11_codes: list[str] = field(default_factory=list)
+    """Mapped ICD-11 codes."""
+
+    snomed_ids: list[str] = field(default_factory=list)
+    """SNOMED CT concept IDs."""
+
+    umls_cuis: list[str] = field(default_factory=list)
+    """UMLS CUIs."""
+
+    icf_categories: list[str] = field(default_factory=list)
+    """Related ICF category codes."""
+
 
 @dataclass
 class CodingEntity:
@@ -151,6 +163,20 @@ class CrosswalkMapping:
     """Target coding system: ``"icd10"`` or ``"icd11"``."""
 
 
+@dataclass(frozen=True)
+class ICFCrossReference:
+    """A related ICF category from WHO Core Sets."""
+
+    code: str
+    """ICF code (e.g., "b5401")."""
+
+    title: str
+    """ICF code title."""
+
+    component: str
+    """Component letter: "b", "s", "d", or "e"."""
+
+
 @dataclass
 class CodeDetailFull(CodeDetail):
     """Comprehensive details for an ICD-10-CM code including hierarchy and synonyms."""
@@ -175,6 +201,9 @@ class CodeDetailFull(CodeDetail):
 
     icd11_mappings: list[CrosswalkMapping] = field(default_factory=list)
     """ICD-11 crosswalk mappings for this ICD-10 code."""
+
+    icf_categories: list[ICFCrossReference] = field(default_factory=list)
+    """Related ICF categories from WHO Core Sets."""
 
 
 @dataclass
@@ -241,6 +270,9 @@ class ICD11CodeDetailFull(ICD11CodeDetail):
 
     icd10_mappings: list[CrosswalkMapping] = field(default_factory=list)
     """ICD-10 crosswalk mappings for this ICD-11 code."""
+
+    icf_categories: list[ICFCrossReference] = field(default_factory=list)
+    """Related ICF categories (via ICD-10 bridge)."""
 
 
 @dataclass
@@ -323,6 +355,15 @@ class ICFCodeDetail:
     index_terms: list[str] = field(default_factory=list)
     """Index terms for this code."""
 
+    icd10_mappings: list[CrosswalkMapping] = field(default_factory=list)
+    """Related ICD-10 codes from WHO Core Sets."""
+
+    icd11_mappings: list[CrosswalkMapping] = field(default_factory=list)
+    """Related ICD-11 codes (via ICD-10 bridge)."""
+
+    cross_references: dict[str, list[str]] = field(default_factory=dict)
+    """Cross-reference IDs: "snomed" (concept IDs), "umls" (CUIs)."""
+
 
 @dataclass
 class ICFCodeResult:
@@ -345,6 +386,18 @@ class ICFCodeResult:
 
     matched_term: str
     """The index term that produced this match."""
+
+    icd10_codes: list[str] = field(default_factory=list)
+    """Related ICD-10 codes."""
+
+    icd11_codes: list[str] = field(default_factory=list)
+    """Related ICD-11 codes."""
+
+    snomed_ids: list[str] = field(default_factory=list)
+    """SNOMED CT concept IDs."""
+
+    umls_cuis: list[str] = field(default_factory=list)
+    """UMLS CUIs."""
 
 
 @dataclass

@@ -33,6 +33,7 @@ from .types import (
     ICFCodingEntity,
     ICFCodingResponse,
     ICFCoreSetResult,
+    ICFCrossReference,
     ICFSearchResponse,
     PIIEntity,
     SearchOptions,
@@ -73,4 +74,5 @@ __all__ = [
     "ICFCodingResponse",
     "ICFSearchResponse",
     "ICFCoreSetResult",
+    "ICFCrossReference",
 ]
