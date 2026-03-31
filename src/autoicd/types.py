@@ -459,6 +459,116 @@ class ICFCoreSetResult:
     """Comprehensive ICF Core Set codes."""
 
 
+# ── LOINC ──────────────────────────────────────────────────────────
+
+
+@dataclass
+class LOINCCodeSummary:
+    """Lightweight LOINC code reference."""
+
+    code: str
+    """LOINC code (e.g. ``"2345-7"``)."""
+
+    long_common_name: str
+    """Primary description."""
+
+    short_name: str = ""
+    """Abbreviated name."""
+
+    class_name: str = ""
+    """LOINC class (e.g. ``"CHEM"``)."""
+
+    class_type: int = 1
+    """1=Lab, 2=Clinical, 3=Claims, 4=Surveys."""
+
+    order_obs: str = ""
+    """Order, Observation, or Both."""
+
+
+@dataclass
+class LOINCCodeDetail:
+    """Full LOINC code details."""
+
+    code: str
+    """LOINC code."""
+
+    long_common_name: str
+    """Primary description."""
+
+    short_name: str = ""
+    display_name: str = ""
+    consumer_name: str = ""
+    component: str = ""
+    """What is measured (e.g. ``"Glucose"``)."""
+
+    property: str = ""
+    """Measurement property."""
+
+    time_aspect: str = ""
+    """Timing aspect."""
+
+    system: str = ""
+    """Specimen type."""
+
+    scale_type: str = ""
+    """Scale type."""
+
+    method_type: str = ""
+    """Method used."""
+
+    class_name: str = ""
+    class_type: int = 1
+    definition: str | None = None
+    order_obs: str = ""
+    related_names: list[str] = field(default_factory=list)
+    common_test_rank: int = 0
+    common_order_rank: int = 0
+    cross_references: dict[str, list[str]] = field(default_factory=dict)
+    """Cross-reference IDs: ``"snomed"`` (concept IDs), ``"umls"`` (CUIs)."""
+
+
+@dataclass
+class LOINCSearchResponse:
+    """LOINC code search results."""
+
+    query: str
+    count: int
+    codes: list[LOINCCodeSummary] = field(default_factory=list)
+
+
+@dataclass
+class LOINCCodeResult:
+    """A single LOINC code match (Phase 2)."""
+
+    code: str
+    long_common_name: str
+    component: str = ""
+    system: str = ""
+    similarity: float = 0.0
+    confidence: str = "moderate"
+    matched_term: str = ""
+    snomed_ids: list[str] = field(default_factory=list)
+    umls_cuis: list[str] = field(default_factory=list)
+
+
+@dataclass
+class LOINCCodingEntity:
+    """LOINC coding results for one entity (Phase 2)."""
+
+    entity_text: str
+    codes: list[LOINCCodeResult] = field(default_factory=list)
+
+
+@dataclass
+class LOINCCodingResponse:
+    """Full LOINC coding response (Phase 2)."""
+
+    text: str
+    provider: str = "sapbert"
+    entity_count: int = 0
+    results: list[LOINCCodingEntity] = field(default_factory=list)
+
+
 # ── Anonymization ───────────────────────────────────────────────────
 
 

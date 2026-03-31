@@ -37,6 +37,9 @@ from .types import (
     ICFCoreSetResult,
     ICFCrossReference,
     ICFSearchResponse,
+    LOINCCodeDetail,
+    LOINCCodeSummary,
+    LOINCSearchResponse,
     PIIEntity,
     SearchOptions,
 )
@@ -163,6 +166,38 @@ class ICFCodes:
         return _parse_icf_core_set_result(data)
 
 
+class LOINCCodes:
+    """Sub-resource for LOINC code lookups."""
+
+    def __init__(self, client: AutoICD) -> None:
+        self._client = client
+
+    def lookup(self, code: str) -> LOINCCodeDetail:
+        """Get full details for a LOINC code.
+
+        Returns comprehensive info including 6-axis classification,
+        definition, related names, and cross-references.
+        """
+        data = self._client._get(f"/api/v1/loinc/codes/{quote(code, safe='')}")
+        return _parse_loinc_code_detail(data)
+
+    def search(
+        self, query: str, limit: int = 20, offset: int = 0
+    ) -> LOINCSearchResponse:
+        """Search LOINC codes by description.
+
+        Args:
+            query: Search text.
+            limit: Maximum results (default 20).
+            offset: Pagination offset (default 0).
+        """
+        params: dict[str, str] = {"q": query, "limit": str(limit)}
+        if offset:
+            params["offset"] = str(offset)
+        data = self._client._get(f"/api/v1/loinc/codes/search?{urlencode(params)}")
+        return _parse_loinc_search_response(data)
+
+
 class AutoICD:
     """Client for the AutoICD API.
 
@@ -192,6 +227,7 @@ class AutoICD:
         self.icd10 = ICD10Codes(self)
         self.icd11 = ICD11Codes(self)
         self.icf = ICFCodes(self)
+        self.loinc = LOINCCodes(self)
         self.last_rate_limit: RateLimit | None = None
 
     def close(self) -> None:
@@ -506,4 +542,50 @@ def _parse_icf_core_set_result(data: dict[str, Any]) -> ICFCoreSetResult:
         condition_name=data["condition_name"],
         brief=[_parse_icf_code_summary(c) for c in data.get("brief", [])],
         comprehensive=[_parse_icf_code_summary(c) for c in data.get("comprehensive", [])],
+    )
+
+
+# ── LOINC response parsing helpers ──────────────────────────────────
+
+
+def _parse_loinc_code_summary(data: dict[str, Any]) -> LOINCCodeSummary:
+    return LOINCCodeSummary(
+        code=data["code"],
+        long_common_name=data["long_common_name"],
+        short_name=data.get("short_name", ""),
+        class_name=data.get("class_name", ""),
+        class_type=data.get("class_type", 1),
+        order_obs=data.get("order_obs", ""),
+    )
+
+
+def _parse_loinc_code_detail(data: dict[str, Any]) -> LOINCCodeDetail:
+    return LOINCCodeDetail(
+        code=data["code"],
+        long_common_name=data["long_common_name"],
+        short_name=data.get("short_name", ""),
+        display_name=data.get("display_name", ""),
+        consumer_name=data.get("consumer_name", ""),
+        component=data.get("component", ""),
+        property=data.get("property", ""),
+        time_aspect=data.get("time_aspect", ""),
+        system=data.get("system", ""),
+        scale_type=data.get("scale_type", ""),
+        method_type=data.get("method_type", ""),
+        class_name=data.get("class_name", ""),
+        class_type=data.get("class_type", 1),
+        definition=data.get("definition"),
+        order_obs=data.get("order_obs", ""),
+        related_names=data.get("related_names", []),
+        common_test_rank=data.get("common_test_rank", 0),
+        common_order_rank=data.get("common_order_rank", 0),
+        cross_references=data.get("cross_references", {}),
+    )
+
+
+def _parse_loinc_search_response(data: dict[str, Any]) -> LOINCSearchResponse:
+    return LOINCSearchResponse(
+        query=data["query"],
+        count=data["count"],
+        codes=[_parse_loinc_code_summary(c) for c in data.get("codes", [])],
     )

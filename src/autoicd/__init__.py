@@ -35,6 +35,12 @@ from .types import (
     ICFCoreSetResult,
     ICFCrossReference,
     ICFSearchResponse,
+    LOINCCodeDetail,
+    LOINCCodeResult,
+    LOINCCodeSummary,
+    LOINCCodingEntity,
+    LOINCCodingResponse,
+    LOINCSearchResponse,
     PIIEntity,
     SearchOptions,
 )
@@ -75,4 +81,11 @@ __all__ = [
     "ICFSearchResponse",
     "ICFCoreSetResult",
     "ICFCrossReference",
+    # LOINC Types
+    "LOINCCodeSummary",
+    "LOINCCodeDetail",
+    "LOINCSearchResponse",
+    "LOINCCodeResult",
+    "LOINCCodingEntity",
+    "LOINCCodingResponse",
 ]
