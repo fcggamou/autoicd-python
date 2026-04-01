@@ -19,9 +19,6 @@ class CodeOptions:
     output_system: str | None = None
     """Output coding system: ``"icd10"`` (default) or ``"icd11"``."""
 
-    include_loinc: bool | None = None
-    """Include LOINC lab code results in the response."""
-
     include_icf: bool | None = None
     """Include ICF functioning code results in the response."""
 
@@ -120,9 +117,6 @@ class CodingResponse:
 
     entities: list[CodingEntity] = field(default_factory=list)
     """Extracted entities sorted by position."""
-
-    loinc_entities: list[LOINCCodingEntity] | None = None
-    """LOINC lab code results. Only present when include_loinc=True."""
 
     icf_entities: list[ICFCodingEntity] | None = None
     """ICF functioning code results. Only present when include_icf=True."""
