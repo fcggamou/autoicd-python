@@ -38,7 +38,10 @@ from .types import (
     ICFCrossReference,
     ICFSearchResponse,
     LOINCCodeDetail,
+    LOINCCodeResult,
     LOINCCodeSummary,
+    LOINCCodingEntity,
+    LOINCCodingResponse,
     LOINCSearchResponse,
     PIIEntity,
     SearchOptions,
@@ -167,10 +170,20 @@ class ICFCodes:
 
 
 class LOINCCodes:
-    """Sub-resource for LOINC code lookups."""
+    """Sub-resource for LOINC code lookups and coding."""
 
     def __init__(self, client: AutoICD) -> None:
         self._client = client
+
+    def code(self, text: str, top_k: int = 5) -> LOINCCodingResponse:
+        """Code clinical text to LOINC codes.
+
+        Args:
+            text: Clinical note or free-text input.
+            top_k: Number of LOINC candidates per entity (default 5).
+        """
+        data = self._client._post("/api/v1/loinc/code", {"text": text, "top_k": top_k})
+        return _parse_loinc_coding_response(data)
 
     def lookup(self, code: str) -> LOINCCodeDetail:
         """Get full details for a LOINC code.
@@ -588,4 +601,33 @@ def _parse_loinc_search_response(data: dict[str, Any]) -> LOINCSearchResponse:
         query=data["query"],
         count=data["count"],
         codes=[_parse_loinc_code_summary(c) for c in data.get("codes", [])],
+    )
+
+
+def _parse_loinc_code_result(data: dict[str, Any]) -> LOINCCodeResult:
+    return LOINCCodeResult(
+        code=data["code"],
+        long_common_name=data["long_common_name"],
+        component=data.get("component", ""),
+        system=data.get("system", ""),
+        similarity=data["similarity"],
+        confidence=data["confidence"],
+        matched_term=data["matched_term"],
+        snomed_ids=data.get("snomed_ids", []),
+        umls_cuis=data.get("umls_cuis", []),
+    )
+
+
+def _parse_loinc_coding_response(data: dict[str, Any]) -> LOINCCodingResponse:
+    return LOINCCodingResponse(
+        text=data["text"],
+        provider=data["provider"],
+        entity_count=data["entity_count"],
+        results=[
+            LOINCCodingEntity(
+                entity_text=e["entity_text"],
+                codes=[_parse_loinc_code_result(c) for c in e.get("codes", [])],
+            )
+            for e in data.get("results", [])
+        ],
     )

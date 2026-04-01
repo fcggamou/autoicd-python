@@ -538,7 +538,7 @@ class LOINCSearchResponse:
 
 @dataclass
 class LOINCCodeResult:
-    """A single LOINC code match (Phase 2)."""
+    """A single LOINC code match."""
 
     code: str
     long_common_name: str
@@ -553,7 +553,7 @@ class LOINCCodeResult:
 
 @dataclass
 class LOINCCodingEntity:
-    """LOINC coding results for one entity (Phase 2)."""
+    """LOINC coding results for one entity."""
 
     entity_text: str
     codes: list[LOINCCodeResult] = field(default_factory=list)
@@ -561,7 +561,7 @@ class LOINCCodingEntity:
 
 @dataclass
 class LOINCCodingResponse:
-    """Full LOINC coding response (Phase 2)."""
+    """Full LOINC coding response."""
 
     text: str
     provider: str = "sapbert"
