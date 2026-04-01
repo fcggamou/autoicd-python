@@ -19,6 +19,21 @@ class CodeOptions:
     output_system: str | None = None
     """Output coding system: ``"icd10"`` (default) or ``"icd11"``."""
 
+    include_loinc: bool | None = None
+    """Include LOINC lab code results in the response."""
+
+    include_icf: bool | None = None
+    """Include ICF functioning code results in the response."""
+
+    include_icd11: bool | None = None
+    """Include ICD-11 crosswalk codes per ICD-10 match."""
+
+    include_snomed: bool | None = None
+    """Include SNOMED CT concept IDs per ICD-10 match."""
+
+    include_umls: bool | None = None
+    """Include UMLS CUIs per ICD-10 match."""
+
 
 @dataclass
 class CodeMatch:
@@ -105,6 +120,12 @@ class CodingResponse:
 
     entities: list[CodingEntity] = field(default_factory=list)
     """Extracted entities sorted by position."""
+
+    loinc_entities: list[LOINCCodingEntity] | None = None
+    """LOINC lab code results. Only present when include_loinc=True."""
+
+    icf_entities: list[ICFCodingEntity] | None = None
+    """ICF functioning code results. Only present when include_icf=True."""
 
 
 # ── Code Search ─────────────────────────────────────────────────────

@@ -273,6 +273,16 @@ class AutoICD:
                 body["include_negated"] = options.include_negated
             if options.output_system is not None:
                 body["output_system"] = options.output_system
+            if options.include_loinc is not None:
+                body["include_loinc"] = options.include_loinc
+            if options.include_icf is not None:
+                body["include_icf"] = options.include_icf
+            if options.include_icd11 is not None:
+                body["include_icd11"] = options.include_icd11
+            if options.include_snomed is not None:
+                body["include_snomed"] = options.include_snomed
+            if options.include_umls is not None:
+                body["include_umls"] = options.include_umls
         data = self._post("/api/v1/code", body)
         return _parse_coding_response(data)
 
@@ -394,11 +404,33 @@ def _parse_entity(data: dict[str, Any]) -> CodingEntity:
 
 
 def _parse_coding_response(data: dict[str, Any]) -> CodingResponse:
+    loinc_entities = None
+    if data.get("loinc_entities") is not None:
+        loinc_entities = [
+            LOINCCodingEntity(
+                entity_text=e["entity_text"],
+                codes=[_parse_loinc_code_result(c) for c in e.get("codes", [])],
+            )
+            for e in data["loinc_entities"]
+        ]
+
+    icf_entities = None
+    if data.get("icf_entities") is not None:
+        icf_entities = [
+            ICFCodingEntity(
+                entity_text=e["entity_text"],
+                codes=[_parse_icf_code_result(c) for c in e.get("codes", [])],
+            )
+            for e in data["icf_entities"]
+        ]
+
     return CodingResponse(
         text=data["text"],
         provider=data["provider"],
         entity_count=data["entity_count"],
         entities=[_parse_entity(e) for e in data.get("entities", [])],
+        loinc_entities=loinc_entities,
+        icf_entities=icf_entities,
     )
 
 

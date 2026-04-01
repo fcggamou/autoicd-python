@@ -439,3 +439,68 @@ class TestRateLimit:
 
         assert client.last_rate_limit is None
         client.close()
+
+
+# ── Unified code() include flags ─────────────────────────────────────
+
+
+class TestUnifiedCodeFlags:
+    def test_include_flags_sent_in_body(self):
+        """code() should pass include flags to the request body."""
+        captured = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["body"] = request.content.decode()
+            return httpx.Response(200, json=_CODING_RESPONSE, headers=_RATE_LIMIT_HEADERS)
+
+        transport = httpx.MockTransport(handler)
+        client = _make_client(transport)
+        client.code("test", CodeOptions(
+            include_loinc=True,
+            include_icd11=True,
+            include_snomed=True,
+            include_umls=True,
+        ))
+        import json
+        body = json.loads(captured["body"])
+        assert body["include_loinc"] is True
+        assert body["include_icd11"] is True
+        assert body["include_snomed"] is True
+        assert body["include_umls"] is True
+
+    def test_loinc_entities_parsed(self):
+        """loinc_entities should be parsed when present."""
+        response_data = {
+            **_CODING_RESPONSE,
+            "loinc_entities": [
+                {
+                    "entity_text": "hemoglobin A1c",
+                    "codes": [
+                        {
+                            "code": "4548-4",
+                            "long_common_name": "Hemoglobin A1c",
+                            "component": "Hemoglobin A1c",
+                            "system": "Bld",
+                            "similarity": 0.92,
+                            "confidence": "high",
+                            "matched_term": "hemoglobin a1c",
+                        }
+                    ],
+                }
+            ],
+        }
+        transport = _mock_transport(json_body=response_data, headers=_RATE_LIMIT_HEADERS)
+        client = _make_client(transport)
+        result = client.code("test", CodeOptions(include_loinc=True))
+        assert result.loinc_entities is not None
+        assert len(result.loinc_entities) == 1
+        assert result.loinc_entities[0].entity_text == "hemoglobin A1c"
+        assert result.loinc_entities[0].codes[0].code == "4548-4"
+
+    def test_optional_fields_absent(self):
+        """loinc_entities/icf_entities should be None when not in response."""
+        transport = _mock_transport(json_body=_CODING_RESPONSE, headers=_RATE_LIMIT_HEADERS)
+        client = _make_client(transport)
+        result = client.code("test")
+        assert result.loinc_entities is None
+        assert result.icf_entities is None
