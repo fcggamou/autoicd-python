@@ -45,6 +45,27 @@ from .types import (
     LOINCSearchResponse,
     PIIEntity,
     SearchOptions,
+    AuditCapability,
+    AuditClaimContext,
+    AuditCode,
+    AuditContext,
+    AuditDocument,
+    AuditPatientContext,
+    AuditPayerContext,
+    AuditRatesOverride,
+    AuditRequest,
+    AuditResponse,
+    AuditTotals,
+    ConfirmedCode,
+    DenialRisk,
+    EvidenceSpan,
+    MCCCCChange,
+    MissedCode,
+    ProblemListDocumentRef,
+    ProblemListEntry,
+    RatesUsed,
+    SpecificityUpgrade,
+    UnsupportedCode,
 )
 
 _DEFAULT_BASE_URL = "https://autoicdapi.com"
@@ -297,6 +318,19 @@ class AutoICD:
             pii_count=data["pii_count"],
             pii_entities=[PIIEntity(**e) for e in data["pii_entities"]],
         )
+
+    def audit(self, request: AuditRequest | dict[str, Any]) -> AuditResponse:
+        """Audit a chart for HCC gaps, RADV risk, specificity, denial risk, and
+        a reconciled problem list.
+
+        Args:
+            request: An :class:`AuditRequest` (or equivalent plain dict) with
+                ``text`` or ``documents``, ``codes``, and optional
+                ``capabilities`` and ``context``.
+        """
+        body = _audit_request_to_body(request)
+        data = self._post("/api/v1/audit", body)
+        return _parse_audit_response(data)
 
     # ── HTTP internals ──────────────────────────────────────────────
 
@@ -649,4 +683,155 @@ def _parse_loinc_coding_response(data: dict[str, Any]) -> LOINCCodingResponse:
             )
             for e in data.get("results", [])
         ],
+    )
+
+
+# ── Audit helpers ───────────────────────────────────────────────────
+
+
+def _dataclass_to_dict(value: Any) -> Any:
+    """Convert dataclasses to plain dicts, skipping ``None`` fields. Also
+    handles the ``mcc_cc_change.from_`` Python-keyword quirk."""
+    from dataclasses import asdict, is_dataclass
+
+    if is_dataclass(value):
+        result: dict[str, Any] = {}
+        for key, val in asdict(value).items():
+            if val is None:
+                continue
+            out_key = "from" if key == "from_" else key
+            result[out_key] = _clean(val)
+        return result
+    return _clean(value)
+
+
+def _clean(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            ("from" if k == "from_" else k): _clean(v)
+            for k, v in value.items()
+            if v is not None
+        }
+    if isinstance(value, list):
+        return [_clean(v) for v in value]
+    return value
+
+
+def _audit_request_to_body(request: AuditRequest | dict[str, Any]) -> dict[str, Any]:
+    if isinstance(request, dict):
+        return _clean(request)
+    return _dataclass_to_dict(request)
+
+
+def _parse_evidence_span(data: dict[str, Any]) -> EvidenceSpan:
+    return EvidenceSpan(
+        document_id=data["document_id"],
+        start=data["start"],
+        end=data["end"],
+        quote=data["quote"],
+    )
+
+
+def _parse_confirmed(data: dict[str, Any]) -> ConfirmedCode:
+    return ConfirmedCode(
+        code=data["code"],
+        kind=data["kind"],
+        description=data["description"],
+        evidence=[_parse_evidence_span(e) for e in data.get("evidence", [])],
+        confidence=data["confidence"],
+        hcc_category=data.get("hcc_category"),
+        raf_weight=data.get("raf_weight"),
+    )
+
+
+def _parse_missed(data: dict[str, Any]) -> MissedCode:
+    return MissedCode(
+        code=data["code"],
+        kind=data["kind"],
+        description=data["description"],
+        evidence=[_parse_evidence_span(e) for e in data.get("evidence", [])],
+        confidence=data["confidence"],
+        hcc_category=data.get("hcc_category"),
+        raf_weight=data.get("raf_weight"),
+        estimated_revenue=data.get("estimated_revenue"),
+        hcc_model=data.get("hcc_model"),
+    )
+
+
+def _parse_unsupported(data: dict[str, Any]) -> UnsupportedCode:
+    return UnsupportedCode(
+        code=data["code"],
+        kind=data["kind"],
+        description=data["description"],
+        reason=data["reason"],
+        what_would_support_it=data["what_would_support_it"],
+        radv_risk=data["radv_risk"],
+        estimated_exposure=data.get("estimated_exposure"),
+    )
+
+
+def _parse_specificity(data: dict[str, Any]) -> SpecificityUpgrade:
+    mcc = data.get("mcc_cc_change")
+    return SpecificityUpgrade(
+        from_code=data["from_code"],
+        to_code=data["to_code"],
+        from_description=data["from_description"],
+        to_description=data["to_description"],
+        evidence=[_parse_evidence_span(e) for e in data.get("evidence", [])],
+        mcc_cc_change=(
+            MCCCCChange(from_=mcc["from"], to=mcc["to"]) if mcc else None
+        ),
+        drg_impact=data.get("drg_impact"),
+    )
+
+
+def _parse_denial(data: dict[str, Any]) -> DenialRisk:
+    return DenialRisk(
+        code=data["code"],
+        kind=data["kind"],
+        description=data["description"],
+        risk=data["risk"],
+        probability=data["probability"],
+        reasons=list(data.get("reasons", [])),
+    )
+
+
+def _parse_problem_list_entry(data: dict[str, Any]) -> ProblemListEntry:
+    return ProblemListEntry(
+        condition=data["condition"],
+        icd10_code=data["icd10_code"],
+        status=data["status"],
+        first_seen=ProblemListDocumentRef(
+            document_id=data["first_seen"]["document_id"],
+            date=data["first_seen"].get("date"),
+        ),
+        last_seen=ProblemListDocumentRef(
+            document_id=data["last_seen"]["document_id"],
+            date=data["last_seen"].get("date"),
+        ),
+        evidence=[_parse_evidence_span(e) for e in data.get("evidence", [])],
+    )
+
+
+def _parse_audit_response(data: dict[str, Any]) -> AuditResponse:
+    totals = AuditTotals(**data["totals"])
+    rates = RatesUsed(**data["rates_used"])
+    problem_list_raw = data.get("problem_list")
+    return AuditResponse(
+        capabilities_run=list(data["capabilities_run"]),
+        confirmed=[_parse_confirmed(c) for c in data.get("confirmed", [])],
+        missed=[_parse_missed(m) for m in data.get("missed", [])],
+        unsupported=[_parse_unsupported(u) for u in data.get("unsupported", [])],
+        specificity_upgrades=[
+            _parse_specificity(s) for s in data.get("specificity_upgrades", [])
+        ],
+        denial_risk=[_parse_denial(d) for d in data.get("denial_risk", [])],
+        totals=totals,
+        provider=data["provider"],
+        rates_used=rates,
+        problem_list=(
+            [_parse_problem_list_entry(p) for p in problem_list_raw]
+            if problem_list_raw is not None
+            else None
+        ),
     )
