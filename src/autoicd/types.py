@@ -615,3 +615,205 @@ class AnonymizeResponse:
     anonymized_text: str
     pii_count: int
     pii_entities: list[PIIEntity] = field(default_factory=list)
+
+
+# ── Chart Audit ─────────────────────────────────────────────────────
+
+AuditCapability = Literal[
+    "hcc", "radv", "specificity", "denial", "problem_list"
+]
+
+HCCModelChoice = Literal["v22", "v28", "both"]
+HCCModelValue = Literal["v22", "v28"]
+
+
+@dataclass
+class AuditDocument:
+    """One document in a longitudinal bundle."""
+
+    id: str
+    text: str
+    type: str | None = None
+    date: str | None = None
+
+
+@dataclass
+class AuditCode:
+    """A code submitted for auditing."""
+
+    code: str
+    kind: Literal["icd10", "icd11", "cpt", "hcpcs"] = "icd10"
+
+
+@dataclass
+class AuditPatientContext:
+    age: int | None = None
+    sex: Literal["male", "female"] | None = None
+    coverage: str | None = None
+
+
+@dataclass
+class AuditClaimContext:
+    date_of_service: str | None = None
+    place_of_service: str | None = None
+    provider_type: str | None = None
+
+
+@dataclass
+class AuditPayerContext:
+    id: str | None = None
+    type: str | None = None
+
+
+@dataclass
+class AuditRatesOverride:
+    cms_base_rate: float | None = None
+    hospital_base_rate: float | None = None
+    denial_rework_cost: float | None = None
+
+
+@dataclass
+class AuditContext:
+    """Optional context that progressively unlocks richer findings."""
+
+    patient: AuditPatientContext | None = None
+    claim: AuditClaimContext | None = None
+    payer: AuditPayerContext | None = None
+    rates: AuditRatesOverride | None = None
+    hcc_model: HCCModelChoice | None = None
+
+
+@dataclass
+class AuditRequest:
+    """Chart audit input. Provide ``text`` OR ``documents``.
+
+    ``codes`` is required unless ``capabilities`` is ``["problem_list"]`` only.
+    """
+
+    text: str | None = None
+    documents: list[AuditDocument] | None = None
+    codes: list[AuditCode] | None = None
+    capabilities: list[AuditCapability] | None = None
+    context: AuditContext | None = None
+
+
+@dataclass
+class EvidenceSpan:
+    """A verbatim extract from the source text backing a finding."""
+
+    document_id: str
+    start: int
+    end: int
+    quote: str
+
+
+@dataclass
+class ConfirmedCode:
+    code: str
+    kind: str
+    description: str
+    evidence: list[EvidenceSpan] = field(default_factory=list)
+    confidence: float = 0.0
+    hcc_category: str | None = None
+    raf_weight: float | None = None
+
+
+@dataclass
+class MissedCode:
+    code: str
+    kind: str
+    description: str
+    evidence: list[EvidenceSpan] = field(default_factory=list)
+    confidence: float = 0.0
+    hcc_category: str | None = None
+    raf_weight: float | None = None
+    estimated_revenue: float | None = None
+    hcc_model: HCCModelValue | None = None
+
+
+@dataclass
+class UnsupportedCode:
+    code: str
+    kind: str
+    description: str
+    reason: str
+    what_would_support_it: str
+    radv_risk: Literal["high", "moderate", "low"]
+    estimated_exposure: float | None = None
+
+
+@dataclass
+class MCCCCChange:
+    from_: Literal["none", "cc", "mcc"]
+    to: Literal["none", "cc", "mcc"]
+
+
+@dataclass
+class SpecificityUpgrade:
+    from_code: str
+    to_code: str
+    from_description: str
+    to_description: str
+    evidence: list[EvidenceSpan] = field(default_factory=list)
+    mcc_cc_change: MCCCCChange | None = None
+    drg_impact: float | None = None
+
+
+@dataclass
+class DenialRisk:
+    code: str
+    kind: str
+    description: str
+    risk: Literal["high", "moderate", "low"]
+    probability: float
+    reasons: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ProblemListDocumentRef:
+    document_id: str
+    date: str | None = None
+
+
+@dataclass
+class ProblemListEntry:
+    condition: str
+    icd10_code: str
+    status: Literal["active", "resolved", "historical"]
+    first_seen: ProblemListDocumentRef
+    last_seen: ProblemListDocumentRef
+    evidence: list[EvidenceSpan] = field(default_factory=list)
+
+
+@dataclass
+class AuditTotals:
+    missed_raf: float
+    estimated_revenue_recovery: float
+    radv_exposure: float
+    drg_upside: float
+    codes_confirmed: int
+    codes_missed: int
+    codes_unsupported: int
+    upgrades_available: int
+
+
+@dataclass
+class RatesUsed:
+    cms_base_rate: float
+    hospital_base_rate: float
+    source: Literal["cms_national_2026", "customer_provided"]
+    hcc_model: HCCModelChoice
+
+
+@dataclass
+class AuditResponse:
+    capabilities_run: list[AuditCapability]
+    confirmed: list[ConfirmedCode]
+    missed: list[MissedCode]
+    unsupported: list[UnsupportedCode]
+    specificity_upgrades: list[SpecificityUpgrade]
+    denial_risk: list[DenialRisk]
+    totals: AuditTotals
+    provider: str
+    rates_used: RatesUsed
+    problem_list: list[ProblemListEntry] | None = None
