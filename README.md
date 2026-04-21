@@ -17,6 +17,7 @@ Single dependency (`httpx`). Works in **Python 3.10+**.
 | | |
 |---|---|
 | **AI-Powered ICD-10, ICD-11 & ICF Coding** | Clinical NLP extracts diagnoses from free-text notes and maps them to ICD-10-CM, ICD-11, or ICF codes — no manual lookup required |
+| **Chart Audit with HCC Gap Capture** | Find missed HCCs, unsupported codes, and specificity upgrades with RAF-weighted revenue estimates (CMS v22 + v28 PY2026). Every finding carries evidence spans |
 | **74,000+ ICD-10-CM Codes** | Full 2025 code set enriched with SNOMED CT synonyms for comprehensive matching |
 | **ICD-11 Support** | Search and look up ICD-11 codes, with full ICD-10 ↔ ICD-11 crosswalk mappings |
 | **ICF Functioning Codes** | Code clinical text to WHO ICF categories, search 1,400+ codes, and access Core Sets for 12+ conditions |
@@ -67,6 +68,53 @@ for entity in result.entities:
 ---
 
 ## Features
+
+### Chart Audit (HCC gap capture, RADV defense, specificity, denial risk)
+
+Audit a chart to surface coding gaps, unsupported codes, specificity upgrades, and denial-risk flags in one call. Every finding carries extractive evidence spans. HCC gaps include RAF-weighted revenue estimates using the CMS PY2026 V22 and V28 community models.
+
+```python
+from autoicd import AutoICD, AuditRequest, AuditCode, AuditContext, AuditPatientContext
+
+client = AutoICD(api_key="sk_...")
+
+audit = client.audit(AuditRequest(
+    text=(
+        "68yo M, type 2 diabetes stable on metformin, chronic systolic heart failure "
+        "on furosemide, edema controlled. A1c 7.4 today."
+    ),
+    codes=[AuditCode(code="E11.9", kind="icd10")],
+    capabilities=["hcc", "radv", "specificity", "denial", "problem_list"],
+    context=AuditContext(
+        patient=AuditPatientContext(coverage="medicare_advantage"),
+        hcc_model="both",
+    ),
+))
+
+print(f"Missed revenue: ${audit.totals.estimated_revenue_recovery:.0f}")
+print(f"RADV exposure:  ${audit.totals.radv_exposure:.0f}")
+
+for m in audit.missed:
+    cat = m.hcc_category or "non-HCC"
+    model = m.hcc_model or ""
+    print(f"MISSED {m.code} ({cat} {model}) -> ${m.estimated_revenue or 0:.0f}: {m.description}")
+    for span in m.evidence:
+        print(f'    evidence: "{span.quote}" [{span.start}-{span.end}]')
+```
+
+| Capability | What it surfaces |
+|---|---|
+| `hcc` | Missed HCC codes with `hcc_category`, `raf_weight`, `estimated_revenue` per v22/v28 model |
+| `radv` | Submitted codes with no supporting documentation, with `what_would_support_it` guidance and exposure dollars |
+| `specificity` | Upgrade opportunities from unspecified to more specific child codes |
+| `denial` | Documentation-quality risk flags (missing laterality, missing duration, age/sex mismatches) |
+| `problem_list` | Deduplicated active-conditions list with status (active/historical) and evidence |
+
+Default behavior runs all five capabilities. Pass `capabilities=["hcc"]` to run a targeted audit. The Audit endpoint also accepts plain dicts if you prefer not to import the dataclasses.
+
+> **`hcc_model`:** use `"v22"`, `"v28"`, or `"both"` (default). CMS PY2026 MA payment uses V22 and V28 as the two main community models. V24 is the ESRD-specific model and is not accepted here.
+
+Read more about the Audit endpoint at [autoicdapi.com/audit](https://autoicdapi.com/audit).
 
 ### Automated ICD-10 Medical Coding
 
