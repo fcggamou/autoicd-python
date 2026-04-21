@@ -806,6 +806,16 @@ class RatesUsed:
 
 
 @dataclass
+class UpgradeHint:
+    """Present when the server dropped capabilities that the caller's plan
+    did not include."""
+
+    denied_capabilities: list[AuditCapability]
+    required_plan: str
+    message: str
+
+
+@dataclass
 class AuditResponse:
     capabilities_run: list[AuditCapability]
     confirmed: list[ConfirmedCode]
@@ -817,3 +827,4 @@ class AuditResponse:
     provider: str
     rates_used: RatesUsed
     problem_list: list[ProblemListEntry] | None = None
+    upgrade_hint: UpgradeHint | None = None

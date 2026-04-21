@@ -66,6 +66,7 @@ from .types import (
     RatesUsed,
     SpecificityUpgrade,
     UnsupportedCode,
+    UpgradeHint,
 )
 
 _DEFAULT_BASE_URL = "https://autoicdapi.com"
@@ -817,6 +818,7 @@ def _parse_audit_response(data: dict[str, Any]) -> AuditResponse:
     totals = AuditTotals(**data["totals"])
     rates = RatesUsed(**data["rates_used"])
     problem_list_raw = data.get("problem_list")
+    hint_raw = data.get("upgrade_hint")
     return AuditResponse(
         capabilities_run=list(data["capabilities_run"]),
         confirmed=[_parse_confirmed(c) for c in data.get("confirmed", [])],
@@ -832,6 +834,15 @@ def _parse_audit_response(data: dict[str, Any]) -> AuditResponse:
         problem_list=(
             [_parse_problem_list_entry(p) for p in problem_list_raw]
             if problem_list_raw is not None
+            else None
+        ),
+        upgrade_hint=(
+            UpgradeHint(
+                denied_capabilities=list(hint_raw["denied_capabilities"]),
+                required_plan=hint_raw["required_plan"],
+                message=hint_raw["message"],
+            )
+            if hint_raw is not None
             else None
         ),
     )

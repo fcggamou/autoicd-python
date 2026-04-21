@@ -66,6 +66,7 @@ from .types import (
     RatesUsed,
     SpecificityUpgrade,
     UnsupportedCode,
+    UpgradeHint,
 )
 
 __all__ = [
@@ -135,4 +136,5 @@ __all__ = [
     "RatesUsed",
     "SpecificityUpgrade",
     "UnsupportedCode",
+    "UpgradeHint",
 ]
