@@ -815,6 +815,54 @@ class UpgradeHint:
     message: str
 
 
+# ── Cross-standard Translate ────────────────────────────────────────
+
+InteropSystem = Literal["icd10", "icd11", "snomed", "umls", "icf"]
+
+
+@dataclass
+class TranslateSource:
+    code: str
+    system: InteropSystem
+    description: str | None = None
+
+
+@dataclass
+class TranslateMapping:
+    """Single mapping row returned by ``/v1/translate``."""
+
+    code: str
+    description: str | None = None
+    mapping_type: str | None = None
+    component: str | None = None
+
+
+@dataclass
+class TranslateFrom:
+    code: str
+    system: InteropSystem
+
+
+@dataclass
+class TranslateRequest:
+    """Chart translate input.
+
+    ``from_`` is named with a trailing underscore to avoid shadowing the
+    Python keyword. It serialises to the ``from`` JSON field on the wire.
+    """
+
+    from_: TranslateFrom
+    to: list[InteropSystem] | None = None
+
+
+@dataclass
+class TranslateResponse:
+    from_: TranslateSource
+    mappings: dict[InteropSystem, list[TranslateMapping]]
+    unsupported_targets: list[InteropSystem]
+    provider: str
+
+
 @dataclass
 class AuditResponse:
     capabilities_run: list[AuditCapability]

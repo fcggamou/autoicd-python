@@ -18,6 +18,7 @@ Single dependency (`httpx`). Works in **Python 3.10+**.
 |---|---|
 | **AI-Powered ICD-10, ICD-11 & ICF Coding** | Clinical NLP extracts diagnoses from free-text notes and maps them to ICD-10-CM, ICD-11, or ICF codes — no manual lookup required |
 | **Chart Audit with HCC Gap Capture** | Find missed HCCs, unsupported codes, and specificity upgrades with RAF-weighted revenue estimates (CMS v22 + v28 PY2026). Every finding carries evidence spans |
+| **Cross-Standard Code Translation** | Map a code between ICD-10, ICD-11, SNOMED CT, UMLS, and ICF in one call. Forward ICD-10 → all other systems, plus reverse ICD-11 → ICD-10 and ICF → ICD-10 |
 | **74,000+ ICD-10-CM Codes** | Full 2025 code set enriched with SNOMED CT synonyms for comprehensive matching |
 | **ICD-11 Support** | Search and look up ICD-11 codes, with full ICD-10 ↔ ICD-11 crosswalk mappings |
 | **ICF Functioning Codes** | Code clinical text to WHO ICF categories, search 1,400+ codes, and access Core Sets for 12+ conditions |
@@ -115,6 +116,46 @@ Default behavior runs all five capabilities. Pass `capabilities=["hcc"]` to run 
 > **`hcc_model`:** use `"v22"`, `"v28"`, or `"both"` (default). CMS PY2026 MA payment uses V22 and V28 as the two main community models. V24 is the ESRD-specific model and is not accepted here.
 
 Read more about the Audit endpoint at [autoicdapi.com/audit](https://autoicdapi.com/audit).
+
+### Cross-Standard Code Translation
+
+Translate a code between healthcare coding systems in one call. Forward from ICD-10 to ICD-11, SNOMED CT, UMLS, and ICF, plus reverse ICD-11 → ICD-10 and ICF → ICD-10. Built on CMS-published crosswalks, code-level SNOMED / UMLS concept IDs, and WHO ICF Core Sets.
+
+```python
+from autoicd import AutoICD, TranslateRequest, TranslateFrom
+
+client = AutoICD(api_key="sk_...")
+
+result = client.translate(TranslateRequest(
+    from_=TranslateFrom(code="E11.9", system="icd10"),
+))
+
+print(result.mappings["icd11"])
+# [TranslateMapping(code="5A11", description="Type 2 diabetes mellitus", mapping_type="equivalent", ...)]
+print(result.mappings["snomed"])
+# [TranslateMapping(code="44054006", ...), TranslateMapping(code="73211009", ...)]
+print(result.mappings["icf"])
+# [TranslateMapping(code="b540", description="General metabolic functions", component="b", ...)]
+```
+
+Narrow the targets when you only need specific systems:
+
+```python
+result = client.translate(TranslateRequest(
+    from_=TranslateFrom(code="I50.9", system="icd10"),
+    to=["icd11"],
+))
+```
+
+Requested systems that aren't reachable from the source are returned in `unsupported_targets` rather than raising, so clients can request a broad target list and use whatever comes back. Plain dicts are accepted too: `client.translate({"from": {"code": "E11.9", "system": "icd10"}})`.
+
+| From | To | Source |
+|------|----|--------|
+| ICD-10-CM | ICD-11, SNOMED, UMLS, ICF | CMS crosswalk + concept refsets + WHO Core Sets |
+| ICD-11 MMS | ICD-10-CM | Reverse CMS crosswalk |
+| ICF | ICD-10-CM | Reverse WHO ICF Core Set index |
+
+Read more about the Translate endpoint at [autoicdapi.com/interop](https://autoicdapi.com/interop).
 
 ### Automated ICD-10 Medical Coding
 

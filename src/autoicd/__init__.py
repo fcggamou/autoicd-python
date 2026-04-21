@@ -67,6 +67,12 @@ from .types import (
     SpecificityUpgrade,
     UnsupportedCode,
     UpgradeHint,
+    InteropSystem,
+    TranslateFrom,
+    TranslateMapping,
+    TranslateRequest,
+    TranslateResponse,
+    TranslateSource,
 )
 
 __all__ = [
@@ -137,4 +143,11 @@ __all__ = [
     "SpecificityUpgrade",
     "UnsupportedCode",
     "UpgradeHint",
+    # Translate Types
+    "InteropSystem",
+    "TranslateFrom",
+    "TranslateMapping",
+    "TranslateRequest",
+    "TranslateResponse",
+    "TranslateSource",
 ]

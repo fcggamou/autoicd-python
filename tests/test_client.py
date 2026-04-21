@@ -23,6 +23,9 @@ from autoicd import (
     NotFoundError,
     RateLimitError,
     SearchOptions,
+    TranslateFrom,
+    TranslateRequest,
+    TranslateResponse,
 )
 
 
@@ -464,6 +467,77 @@ class TestAudit:
         body = _json.loads(captured["body"])  # type: ignore[arg-type]
         assert body["context"]["hcc_model"] == "v28"
         assert body["context"]["patient"]["coverage"] == "medicare_advantage"
+        client.close()
+
+
+_TRANSLATE_RESPONSE = {
+    "from": {
+        "code": "E11.9",
+        "system": "icd10",
+        "description": "Type 2 diabetes without complications",
+    },
+    "mappings": {
+        "icd11": [
+            {"code": "5A11", "description": "Type 2 diabetes mellitus", "mapping_type": "equivalent"}
+        ],
+        "snomed": [{"code": "44054006"}, {"code": "73211009"}],
+        "icf": [{"code": "b540", "description": "General metabolic functions", "component": "b"}],
+    },
+    "unsupported_targets": [],
+    "provider": "autoicd-translate-v0.1",
+}
+
+
+class TestTranslate:
+    def test_sends_post_and_parses(self) -> None:
+        captured: dict[str, object] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["url"] = str(request.url)
+            captured["body"] = request.read().decode()
+            return httpx.Response(status_code=200, json=_TRANSLATE_RESPONSE, headers=_RATE_LIMIT_HEADERS)
+
+        client = _make_client(httpx.MockTransport(handler))
+        result = client.translate(TranslateRequest(from_=TranslateFrom(code="E11.9", system="icd10")))
+
+        import json as _json
+        body = _json.loads(captured["body"])  # type: ignore[arg-type]
+        assert "/api/v1/translate" in captured["url"]  # type: ignore[operator]
+        assert body["from"]["code"] == "E11.9"
+        assert body["from"]["system"] == "icd10"
+        assert "to" not in body  # optional target list omitted
+
+        assert isinstance(result, TranslateResponse)
+        assert result.from_.code == "E11.9"
+        assert len(result.mappings["icd11"]) == 1
+        assert result.mappings["icd11"][0].mapping_type == "equivalent"
+        assert len(result.mappings["snomed"]) == 2
+        assert result.mappings["icf"][0].component == "b"
+        assert result.provider == "autoicd-translate-v0.1"
+        client.close()
+
+    def test_narrows_targets_via_to(self) -> None:
+        captured: dict[str, object] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["body"] = request.read().decode()
+            return httpx.Response(status_code=200, json=_TRANSLATE_RESPONSE, headers=_RATE_LIMIT_HEADERS)
+
+        client = _make_client(httpx.MockTransport(handler))
+        client.translate(TranslateRequest(
+            from_=TranslateFrom(code="E11.9", system="icd10"),
+            to=["icd11", "snomed"],
+        ))
+        import json as _json
+        body = _json.loads(captured["body"])  # type: ignore[arg-type]
+        assert body["to"] == ["icd11", "snomed"]
+        client.close()
+
+    def test_accepts_plain_dict(self) -> None:
+        client = _make_client(_mock_transport(json_body=_TRANSLATE_RESPONSE, headers=_RATE_LIMIT_HEADERS))
+        result = client.translate({"from": {"code": "5A11", "system": "icd11"}})
+        assert isinstance(result, TranslateResponse)
+        assert result.provider == "autoicd-translate-v0.1"
         client.close()
 
 

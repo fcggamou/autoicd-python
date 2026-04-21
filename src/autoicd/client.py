@@ -67,6 +67,12 @@ from .types import (
     SpecificityUpgrade,
     UnsupportedCode,
     UpgradeHint,
+    InteropSystem,
+    TranslateFrom,
+    TranslateMapping,
+    TranslateRequest,
+    TranslateResponse,
+    TranslateSource,
 )
 
 _DEFAULT_BASE_URL = "https://autoicdapi.com"
@@ -319,6 +325,21 @@ class AutoICD:
             pii_count=data["pii_count"],
             pii_entities=[PIIEntity(**e) for e in data["pii_entities"]],
         )
+
+    def translate(
+        self, request: TranslateRequest | dict[str, Any]
+    ) -> TranslateResponse:
+        """Translate a code between coding systems.
+
+        Supports ICD-10 ↔ ICD-11, ICD-10 → SNOMED / UMLS / ICF, and
+        ICF → ICD-10. Omit ``to`` to get every system reachable from the
+        source; requested systems not reachable from the source are
+        returned in :attr:`TranslateResponse.unsupported_targets` rather
+        than raising.
+        """
+        body = _translate_request_to_body(request)
+        data = self._post("/api/v1/translate", body)
+        return _parse_translate_response(data)
 
     def audit(self, request: AuditRequest | dict[str, Any]) -> AuditResponse:
         """Audit a chart for HCC gaps, RADV risk, specificity, denial risk, and
@@ -845,4 +866,47 @@ def _parse_audit_response(data: dict[str, Any]) -> AuditResponse:
             if hint_raw is not None
             else None
         ),
+    )
+
+
+# ── Translate helpers ───────────────────────────────────────────────
+
+
+def _translate_request_to_body(
+    request: TranslateRequest | dict[str, Any],
+) -> dict[str, Any]:
+    if isinstance(request, dict):
+        return _clean(request)
+    body: dict[str, Any] = {
+        "from": {"code": request.from_.code, "system": request.from_.system},
+    }
+    if request.to is not None:
+        body["to"] = list(request.to)
+    return body
+
+
+def _parse_translate_mapping(data: dict[str, Any]) -> TranslateMapping:
+    return TranslateMapping(
+        code=data["code"],
+        description=data.get("description"),
+        mapping_type=data.get("mapping_type"),
+        component=data.get("component"),
+    )
+
+
+def _parse_translate_response(data: dict[str, Any]) -> TranslateResponse:
+    src = data["from"]
+    mappings_raw = data.get("mappings", {}) or {}
+    mappings: dict[str, list[TranslateMapping]] = {}
+    for system_key, rows in mappings_raw.items():
+        mappings[system_key] = [_parse_translate_mapping(r) for r in rows]
+    return TranslateResponse(
+        from_=TranslateSource(
+            code=src["code"],
+            system=src["system"],
+            description=src.get("description"),
+        ),
+        mappings=mappings,  # type: ignore[arg-type]
+        unsupported_targets=list(data.get("unsupported_targets", [])),
+        provider=data["provider"],
     )
