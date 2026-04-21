@@ -7,6 +7,11 @@ import pytest
 
 from autoicd import (
     AnonymizeResponse,
+    AuditCode,
+    AuditContext,
+    AuditPatientContext,
+    AuditRequest,
+    AuditResponse,
     AuthenticationError,
     AutoICD,
     AutoICDError,
@@ -343,6 +348,123 @@ class TestICD11Get:
 
 
 # ── anonymize() ─────────────────────────────────────────────────────
+
+
+_AUDIT_RESPONSE = {
+    "capabilities_run": ["hcc"],
+    "confirmed": [
+        {
+            "code": "E11.9",
+            "kind": "icd10",
+            "description": "Type 2 diabetes without complications",
+            "evidence": [
+                {"document_id": "doc_0", "start": 8, "end": 23, "quote": "type 2 diabetes"}
+            ],
+            "confidence": 0.97,
+        }
+    ],
+    "missed": [
+        {
+            "code": "I50.9",
+            "kind": "icd10",
+            "description": "Heart failure, unspecified",
+            "evidence": [
+                {"document_id": "doc_0", "start": 28, "end": 41, "quote": "heart failure"}
+            ],
+            "confidence": 0.93,
+            "hcc_category": "HCC85",
+            "raf_weight": 0.323,
+            "estimated_revenue": 4264.0,
+            "hcc_model": "v22",
+        }
+    ],
+    "unsupported": [],
+    "specificity_upgrades": [],
+    "denial_risk": [],
+    "totals": {
+        "missed_raf": 0.323,
+        "estimated_revenue_recovery": 4264.0,
+        "radv_exposure": 0.0,
+        "drg_upside": 0.0,
+        "codes_confirmed": 1,
+        "codes_missed": 1,
+        "codes_unsupported": 0,
+        "upgrades_available": 0,
+    },
+    "provider": "autoicd-audit-v0.2",
+    "rates_used": {
+        "cms_base_rate": 13200.0,
+        "hospital_base_rate": 6500.0,
+        "source": "cms_national_2026",
+        "hcc_model": "both",
+    },
+}
+
+
+class TestAudit:
+    def test_sends_request_and_parses(self) -> None:
+        captured: dict[str, object] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["url"] = str(request.url)
+            captured["body"] = request.read().decode()
+            return httpx.Response(status_code=200, json=_AUDIT_RESPONSE, headers=_RATE_LIMIT_HEADERS)
+
+        client = _make_client(httpx.MockTransport(handler))
+        result = client.audit(
+            AuditRequest(
+                text="pt with type 2 diabetes and heart failure",
+                codes=[AuditCode(code="E11.9", kind="icd10")],
+                capabilities=["hcc"],
+            )
+        )
+
+        import json as _json
+        body = _json.loads(captured["body"])  # type: ignore[arg-type]
+        assert "/api/v1/audit" in captured["url"]  # type: ignore[operator]
+        assert body["capabilities"] == ["hcc"]
+        assert body["codes"][0]["code"] == "E11.9"
+
+        assert isinstance(result, AuditResponse)
+        assert result.missed[0].hcc_category == "HCC85"
+        assert result.missed[0].hcc_model == "v22"
+        assert result.totals.estimated_revenue_recovery == 4264.0
+        client.close()
+
+    def test_accepts_plain_dict(self) -> None:
+        client = _make_client(_mock_transport(json_body=_AUDIT_RESPONSE, headers=_RATE_LIMIT_HEADERS))
+        result = client.audit({
+            "text": "x",
+            "codes": [{"code": "E11.9", "kind": "icd10"}],
+        })
+        assert isinstance(result, AuditResponse)
+        assert result.capabilities_run == ["hcc"]
+        client.close()
+
+    def test_context_marshalling(self) -> None:
+        captured: dict[str, object] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["body"] = request.read().decode()
+            return httpx.Response(status_code=200, json=_AUDIT_RESPONSE, headers=_RATE_LIMIT_HEADERS)
+
+        client = _make_client(httpx.MockTransport(handler))
+        client.audit(
+            AuditRequest(
+                text="x",
+                codes=[AuditCode(code="E11.9", kind="icd10")],
+                context=AuditContext(
+                    patient=AuditPatientContext(coverage="medicare_advantage"),
+                    hcc_model="v28",
+                ),
+            )
+        )
+
+        import json as _json
+        body = _json.loads(captured["body"])  # type: ignore[arg-type]
+        assert body["context"]["hcc_model"] == "v28"
+        assert body["context"]["patient"]["coverage"] == "medicare_advantage"
+        client.close()
 
 
 class TestAnonymize:
