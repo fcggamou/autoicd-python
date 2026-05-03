@@ -33,7 +33,6 @@ from .types import (
     ICFCodeResult,
     ICFCodeSummary,
     ICFCodingEntity,
-    ICFCodingResponse,
     ICFCoreSetResult,
     ICFCrossReference,
     ICFSearchResponse,
@@ -147,20 +146,10 @@ class ICD11Codes:
 
 
 class ICFCodes:
-    """Sub-resource for ICF code lookups and coding."""
+    """Sub-resource for ICF code lookups, search, and Core Sets."""
 
     def __init__(self, client: AutoICD) -> None:
         self._client = client
-
-    def code(self, text: str, top_k: int = 5) -> ICFCodingResponse:
-        """Code clinical text to ICF codes.
-
-        Args:
-            text: Clinical note or free-text input.
-            top_k: Number of ICF candidates per entity (default 5).
-        """
-        data = self._client._post("/api/v1/icf/code", {"text": text, "top_k": top_k})
-        return _parse_icf_coding_response(data)
 
     def lookup(self, code: str) -> ICFCodeDetail:
         """Get full details for an ICF code.
@@ -597,22 +586,6 @@ def _parse_icf_code_result(data: dict[str, Any]) -> ICFCodeResult:
         icd11_codes=data.get("icd11_codes", []),
         snomed_ids=data.get("snomed_ids", []),
         umls_cuis=data.get("umls_cuis", []),
-    )
-
-
-def _parse_icf_coding_entity(data: dict[str, Any]) -> ICFCodingEntity:
-    return ICFCodingEntity(
-        entity_text=data["entity_text"],
-        codes=[_parse_icf_code_result(c) for c in data.get("codes", [])],
-    )
-
-
-def _parse_icf_coding_response(data: dict[str, Any]) -> ICFCodingResponse:
-    return ICFCodingResponse(
-        text=data["text"],
-        provider=data["provider"],
-        entity_count=data["entity_count"],
-        results=[_parse_icf_coding_entity(e) for e in data.get("results", [])],
     )
 
 

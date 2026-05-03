@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "autoicd"
-version = "0.8.0"
+version = "0.9.0"
 description = "AI medical coding SDK — convert clinical text to ICD-10-CM and ICD-11 diagnosis codes with AI-powered NLP. Automated ICD-10 coding, PHI de-identification, code search, and ICD-10/ICD-11 crosswalk."
 readme = "README.md"
 license = "MIT"

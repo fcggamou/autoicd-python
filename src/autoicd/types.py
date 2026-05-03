@@ -427,23 +427,6 @@ class ICFCodingEntity:
 
 
 @dataclass
-class ICFCodingResponse:
-    """Full ICF coding response."""
-
-    text: str
-    """Input text that was processed."""
-
-    provider: str
-    """Coding provider used."""
-
-    entity_count: int
-    """Total number of entities."""
-
-    results: list[ICFCodingEntity] = field(default_factory=list)
-    """Coding results per entity."""
-
-
-@dataclass
 class ICFSearchResponse:
     """ICF code search results."""
 

@@ -257,12 +257,19 @@ for mapping in detail.icd11_mappings:
 
 ### ICF Functioning Codes
 
-Code clinical text to WHO ICF categories, look up codes, search, and access ICF Core Sets for 12+ conditions.
+Look up WHO ICF categories, search the catalog, and access ICF Core Sets for 12+ conditions. To extract ICF functioning categories from clinical text, pass `CodeOptions(include_icf=True)` to `client.code()`; the response carries `icf_entities` alongside the ICD-10 results.
 
 ```python
-# Code clinical text to ICF categories
-icf = client.icf.code("Patient with stroke and hemiplegia")
-print(icf.results[0].codes[0].code)  # "b730"
+from autoicd import CodeOptions
+
+# Extract ICF functioning categories during ICD-10 coding
+result = client.code(
+    "Patient with stroke and hemiplegia",
+    CodeOptions(include_icf=True),
+)
+for entity in result.icf_entities or []:
+    print(entity.entity_text, entity.codes[0].code)
+    # "hemiplegia" "b730"
 
 # Look up an ICF code
 code = client.icf.lookup("d450")
@@ -396,7 +403,6 @@ Full REST API documentation at [autoicdapi.com/docs](https://autoicdapi.com/docs
 | `client.icd10.get(code)` | Get details for an ICD-10-CM code (incl. ICD-11 crosswalk) |
 | `client.icd11.search(query, options?)` | Search ICD-11 codes by description |
 | `client.icd11.get(code)` | Get details for an ICD-11 code (incl. ICD-10 crosswalk) |
-| `client.icf.code(text, options?)` | Code clinical text to ICF functioning categories |
 | `client.icf.lookup(code)` | Get details for an ICF code |
 | `client.icf.search(query, options?)` | Search ICF codes by keyword |
 | `client.icf.core_set(icd10_code)` | Get ICF Core Set for an ICD-10 diagnosis |
@@ -423,7 +429,6 @@ from autoicd import (
     ICD11CodeDetailFull,
     ICD11CodeSearchResponse,
     CrosswalkMapping,
-    ICFCodingResponse,
     ICFCodeDetail,
     ICFCodeSearchResponse,
     ICFCoreSetResponse,
