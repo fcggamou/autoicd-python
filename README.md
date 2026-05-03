@@ -307,22 +307,22 @@ The SDK can code any of the 74,000+ ICD-10-CM codes. Here are some of the most c
 
 | Condition | ICD-10 Code | Description |
 |-----------|-------------|-------------|
-| [Hypertension](https://autoicdapi.com/icd10/condition/hypertension) | [I10](https://autoicdapi.com/icd10/I10) | Essential (primary) hypertension |
-| [Type 2 Diabetes](https://autoicdapi.com/icd10/condition/diabetes) | [E11.9](https://autoicdapi.com/icd10/E11.9) | Type 2 diabetes mellitus without complications |
-| [Depression](https://autoicdapi.com/icd10/condition/depression) | [F32.9](https://autoicdapi.com/icd10/F32.9) | Major depressive disorder, single episode, unspecified |
-| [Anxiety](https://autoicdapi.com/icd10/condition/anxiety) | [F41.1](https://autoicdapi.com/icd10/F41.1) | Generalized anxiety disorder |
-| [Low Back Pain](https://autoicdapi.com/icd10/condition/back-pain) | [M54.5](https://autoicdapi.com/icd10/M54.5) | Low back pain |
-| [COPD](https://autoicdapi.com/icd10/condition/copd) | [J44.9](https://autoicdapi.com/icd10/J44.9) | Chronic obstructive pulmonary disease, unspecified |
-| [Heart Failure](https://autoicdapi.com/icd10/condition/heart-failure) | [I50.9](https://autoicdapi.com/icd10/I50.9) | Heart failure, unspecified |
-| [UTI](https://autoicdapi.com/icd10/condition/urinary-tract-infection) | [N39.0](https://autoicdapi.com/icd10/N39.0) | Urinary tract infection, site not specified |
-| [Pneumonia](https://autoicdapi.com/icd10/condition/pneumonia) | [J18.9](https://autoicdapi.com/icd10/J18.9) | Pneumonia, unspecified organism |
-| [Atrial Fibrillation](https://autoicdapi.com/icd10/condition/atrial-fibrillation) | [I48.91](https://autoicdapi.com/icd10/I48.91) | Unspecified atrial fibrillation |
-| [Obesity](https://autoicdapi.com/icd10/condition/obesity) | [E66.01](https://autoicdapi.com/icd10/E66.01) | Morbid (severe) obesity due to excess calories |
-| [GERD](https://autoicdapi.com/icd10/condition/gerd) | [K21.9](https://autoicdapi.com/icd10/K21.9) | Gastro-esophageal reflux disease without esophagitis |
-| [Hypothyroidism](https://autoicdapi.com/icd10/condition/hypothyroidism) | [E03.9](https://autoicdapi.com/icd10/E03.9) | Hypothyroidism, unspecified |
-| [CKD](https://autoicdapi.com/icd10/condition/chronic-kidney-disease) | [N18.9](https://autoicdapi.com/icd10/N18.9) | Chronic kidney disease, unspecified |
+| [Hypertension](https://autoicdapi.com/reference/icd-10/condition/hypertension) | [I10](https://autoicdapi.com/reference/icd-10/I10) | Essential (primary) hypertension |
+| [Type 2 Diabetes](https://autoicdapi.com/reference/icd-10/condition/diabetes) | [E11.9](https://autoicdapi.com/reference/icd-10/E11.9) | Type 2 diabetes mellitus without complications |
+| [Depression](https://autoicdapi.com/reference/icd-10/condition/depression) | [F32.9](https://autoicdapi.com/reference/icd-10/F32.9) | Major depressive disorder, single episode, unspecified |
+| [Anxiety](https://autoicdapi.com/reference/icd-10/condition/anxiety) | [F41.1](https://autoicdapi.com/reference/icd-10/F41.1) | Generalized anxiety disorder |
+| [Low Back Pain](https://autoicdapi.com/reference/icd-10/condition/back-pain) | [M54.5](https://autoicdapi.com/reference/icd-10/M54.5) | Low back pain |
+| [COPD](https://autoicdapi.com/reference/icd-10/condition/copd) | [J44.9](https://autoicdapi.com/reference/icd-10/J44.9) | Chronic obstructive pulmonary disease, unspecified |
+| [Heart Failure](https://autoicdapi.com/reference/icd-10/condition/heart-failure) | [I50.9](https://autoicdapi.com/reference/icd-10/I50.9) | Heart failure, unspecified |
+| [UTI](https://autoicdapi.com/reference/icd-10/condition/urinary-tract-infection) | [N39.0](https://autoicdapi.com/reference/icd-10/N39.0) | Urinary tract infection, site not specified |
+| [Pneumonia](https://autoicdapi.com/reference/icd-10/condition/pneumonia) | [J18.9](https://autoicdapi.com/reference/icd-10/J18.9) | Pneumonia, unspecified organism |
+| [Atrial Fibrillation](https://autoicdapi.com/reference/icd-10/condition/atrial-fibrillation) | [I48.91](https://autoicdapi.com/reference/icd-10/I48.91) | Unspecified atrial fibrillation |
+| [Obesity](https://autoicdapi.com/reference/icd-10/condition/obesity) | [E66.01](https://autoicdapi.com/reference/icd-10/E66.01) | Morbid (severe) obesity due to excess calories |
+| [GERD](https://autoicdapi.com/reference/icd-10/condition/gerd) | [K21.9](https://autoicdapi.com/reference/icd-10/K21.9) | Gastro-esophageal reflux disease without esophagitis |
+| [Hypothyroidism](https://autoicdapi.com/reference/icd-10/condition/hypothyroidism) | [E03.9](https://autoicdapi.com/reference/icd-10/E03.9) | Hypothyroidism, unspecified |
+| [CKD](https://autoicdapi.com/reference/icd-10/condition/chronic-kidney-disease) | [N18.9](https://autoicdapi.com/reference/icd-10/N18.9) | Chronic kidney disease, unspecified |
 
-Browse all 74,000+ codes in the [ICD-10-CM Code Directory](https://autoicdapi.com/icd10) or find codes by [condition](https://autoicdapi.com/icd10/condition).
+Browse all 74,000+ codes in the [ICD-10-CM Code Directory](https://autoicdapi.com/reference/icd-10) or find codes by [condition](https://autoicdapi.com/reference/icd-10/condition).
 
 ---
 
@@ -448,10 +448,10 @@ from autoicd import (
 
 - [AutoICD API](https://autoicdapi.com) — Homepage and API key management
 - [API Documentation](https://autoicdapi.com/docs) — Full REST API reference
-- [ICD-10-CM Code Directory](https://autoicdapi.com/icd10) — Browse all 74,000+ diagnosis codes
-- [ICD-11 Code Directory](https://autoicdapi.com/icd11) — Browse the WHO ICD-11 MMS hierarchy
+- [ICD-10-CM Code Directory](https://autoicdapi.com/reference/icd-10) — Browse all 74,000+ diagnosis codes
+- [ICD-11 Code Directory](https://autoicdapi.com/reference/icd-11) — Browse the WHO ICD-11 MMS hierarchy
 - [ICD-10 ↔ ICD-11 Crosswalk](https://autoicdapi.com/icd10-to-icd11) — Map codes between revisions
-- [ICD-10 Codes by Condition](https://autoicdapi.com/icd10/condition) — Find codes for common conditions
+- [ICD-10 Codes by Condition](https://autoicdapi.com/reference/icd-10/condition) — Find codes for common conditions
 - [TypeScript SDK](https://www.npmjs.com/package/autoicd) — `npm install autoicd`
 - [MCP Server](https://www.npmjs.com/package/autoicd-mcp) — For Claude Desktop, Cursor, VS Code
 - [SNOMED CT & UMLS Cross-References](https://autoicdapi.com/snomed-ct-umls) — Terminology mappings
