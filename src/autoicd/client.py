@@ -43,6 +43,12 @@ from .types import (
     LOINCCodingResponse,
     LOINCSearchResponse,
     PIIEntity,
+    ReferenceCodeRecord,
+    ReferenceICD10Record,
+    ReferenceICD11Record,
+    ReferenceICFRecord,
+    ReferenceLOINCRecord,
+    ReferenceSystem,
     SearchOptions,
     AuditCapability,
     AuditClaimContext,
@@ -228,6 +234,36 @@ class LOINCCodes:
         return _parse_loinc_search_response(data)
 
 
+class ReferenceCodes:
+    """Sub-resource for unified cross-system reference lookups.
+
+    Supersedes the per-system getters (``icd10.get``, ``icd11.get``,
+    ``icf.lookup``, ``loinc.lookup``). Those methods continue to work but
+    their underlying API routes now emit ``Deprecation`` and ``Sunset``
+    response headers.
+    """
+
+    def __init__(self, client: AutoICD) -> None:
+        self._client = client
+
+    def lookup(self, system: ReferenceSystem, code: str) -> ReferenceCodeRecord:
+        """Look up canonical reference data for a code in any supported system.
+
+        Args:
+            system: One of ``"icd-10-cm"``, ``"icd-11"``, ``"icf"``, ``"loinc"``.
+            code: The code in the chosen system (e.g. ``"I50.23"``, ``"5A11"``).
+
+        Returns:
+            A discriminated ``ReferenceCodeRecord`` whose ``system`` field
+            tags the variant and whose ``record`` field carries the
+            system-specific detail dataclass.
+        """
+        data = self._client._get(
+            f"/api/v1/reference/{quote(system, safe='')}/{quote(code, safe='')}"
+        )
+        return _parse_reference_code_record(data)
+
+
 class AutoICD:
     """Client for the AutoICD API.
 
@@ -258,6 +294,7 @@ class AutoICD:
         self.icd11 = ICD11Codes(self)
         self.icf = ICFCodes(self)
         self.loinc = LOINCCodes(self)
+        self.reference = ReferenceCodes(self)
         self.last_rate_limit: RateLimit | None = None
 
     def close(self) -> None:
@@ -883,3 +920,18 @@ def _parse_translate_response(data: dict[str, Any]) -> TranslateResponse:
         unsupported_targets=list(data.get("unsupported_targets", [])),
         provider=data["provider"],
     )
+
+
+def _parse_reference_code_record(data: dict[str, Any]) -> ReferenceCodeRecord:
+    system = data.get("system")
+    code = data.get("code", "")
+    record_data = data.get("record") or {}
+    if system == "icd-10-cm":
+        return ReferenceICD10Record(code=code, record=_parse_code_detail_full(record_data))
+    if system == "icd-11":
+        return ReferenceICD11Record(code=code, record=_parse_icd11_code_detail_full(record_data))
+    if system == "icf":
+        return ReferenceICFRecord(code=code, record=_parse_icf_code_detail(record_data))
+    if system == "loinc":
+        return ReferenceLOINCRecord(code=code, record=_parse_loinc_code_detail(record_data))
+    raise AutoICDError(0, f"Unknown reference system in response: {system!r}")

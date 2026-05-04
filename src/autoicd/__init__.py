@@ -72,6 +72,12 @@ from .types import (
     TranslateRequest,
     TranslateResponse,
     TranslateSource,
+    ReferenceCodeRecord,
+    ReferenceICD10Record,
+    ReferenceICD11Record,
+    ReferenceICFRecord,
+    ReferenceLOINCRecord,
+    ReferenceSystem,
 )
 
 __all__ = [
@@ -148,4 +154,11 @@ __all__ = [
     "TranslateRequest",
     "TranslateResponse",
     "TranslateSource",
+    # Reference Lookup Types
+    "ReferenceCodeRecord",
+    "ReferenceICD10Record",
+    "ReferenceICD11Record",
+    "ReferenceICFRecord",
+    "ReferenceLOINCRecord",
+    "ReferenceSystem",
 ]

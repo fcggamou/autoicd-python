@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Literal, Union
 
 # ── Coding ──────────────────────────────────────────────────────────
 
@@ -859,3 +859,44 @@ class AuditResponse:
     rates_used: RatesUsed
     problem_list: list[ProblemListEntry] | None = None
     upgrade_hint: UpgradeHint | None = None
+
+
+# ── Reference Lookup ───────────────────────────────────────────────
+
+ReferenceSystem = Literal["icd-10-cm", "icd-11", "icf", "loinc"]
+
+
+@dataclass
+class ReferenceICD10Record:
+    code: str
+    record: CodeDetailFull
+    system: Literal["icd-10-cm"] = "icd-10-cm"
+
+
+@dataclass
+class ReferenceICD11Record:
+    code: str
+    record: ICD11CodeDetailFull
+    system: Literal["icd-11"] = "icd-11"
+
+
+@dataclass
+class ReferenceICFRecord:
+    code: str
+    record: ICFCodeDetail
+    system: Literal["icf"] = "icf"
+
+
+@dataclass
+class ReferenceLOINCRecord:
+    code: str
+    record: LOINCCodeDetail
+    system: Literal["loinc"] = "loinc"
+
+
+ReferenceCodeRecord = Union[
+    ReferenceICD10Record,
+    ReferenceICD11Record,
+    ReferenceICFRecord,
+    ReferenceLOINCRecord,
+]
