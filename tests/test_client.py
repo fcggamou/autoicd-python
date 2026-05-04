@@ -22,6 +22,7 @@ from autoicd import (
     ICD11CodeSearchResponse,
     NotFoundError,
     RateLimitError,
+    ReferenceICD10Record,
     SearchOptions,
     TranslateFrom,
     TranslateRequest,
@@ -210,6 +211,44 @@ class TestICD10CodesSearch:
 
 
 # ── icd10.get() ─────────────────────────────────────────────────────
+
+
+class TestReferenceLookup:
+    def test_dispatches_to_reference_endpoint(self) -> None:
+        payload = {
+            "system": "icd-10-cm",
+            "code": "I50.23",
+            "record": {
+                "code": "I50.23",
+                "short_description": "Acute on chronic systolic CHF",
+                "long_description": "Acute on chronic systolic (congestive) heart failure",
+                "is_billable": True,
+                "synonyms": {},
+                "cross_references": {},
+                "parent": None,
+                "children": [],
+                "chapter": None,
+                "block": None,
+                "icd11_mappings": [],
+                "icf_categories": [],
+            },
+        }
+        requests: list[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            return httpx.Response(200, json=payload, headers=_RATE_LIMIT_HEADERS)
+
+        client = _make_client(httpx.MockTransport(handler))
+        result = client.reference.lookup("icd-10-cm", "I50.23")
+
+        assert requests[0].method == "GET"
+        assert requests[0].url.path == "/api/v1/reference/icd-10-cm/I50.23"
+        assert isinstance(result, ReferenceICD10Record)
+        assert result.system == "icd-10-cm"
+        assert result.record.code == "I50.23"
+        assert result.record.is_billable is True
+        client.close()
 
 
 class TestICD10CodesGet:
