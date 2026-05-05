@@ -861,9 +861,108 @@ class AuditResponse:
     upgrade_hint: UpgradeHint | None = None
 
 
+# ── SNOMED CT / UMLS / RxNorm Records ──────────────────────────────
+
+
+@dataclass
+class SnomedCodeDetail:
+    """Canonical SNOMED CT concept record."""
+
+    concept_id: str
+    """SNOMED CT concept ID (SCTID)."""
+
+    fsn: str
+    """Fully Specified Name."""
+
+    preferred_term: str
+    """Preferred Term."""
+
+    semantic_tag: str
+    """Semantic tag from the FSN (e.g. ``"disorder"``, ``"finding"``)."""
+
+    active: bool
+    """Whether the concept is active in the latest release."""
+
+    synonyms: list[str] = field(default_factory=list)
+    """Synonym terms."""
+
+    cross_references: dict[str, list[str]] = field(default_factory=dict)
+    """Cross-reference IDs grouped by system: ``"icd10"``, ``"icd11"``,
+    ``"loinc"``, ``"umls"``, ``"rxnorm"``."""
+
+
+@dataclass
+class UmlsAtomDetail:
+    """Single source-vocabulary atom underlying a UMLS concept."""
+
+    source_vocabulary: str
+    source_code: str
+    term_type: str
+    description: str
+
+
+@dataclass
+class UmlsCodeDetail:
+    """Canonical UMLS Metathesaurus concept record."""
+
+    cui: str
+    """UMLS Concept Unique Identifier."""
+
+    preferred_name: str
+    """Preferred concept name."""
+
+    semantic_types: list[str] = field(default_factory=list)
+    """Semantic types (TUIs / labels)."""
+
+    atoms: list[UmlsAtomDetail] = field(default_factory=list)
+    """Source-vocabulary atoms behind the concept."""
+
+    cross_references: dict[str, list[str]] = field(default_factory=dict)
+    """Cross-reference IDs grouped by system: ``"icd10"``, ``"snomed"``,
+    ``"loinc"``, ``"rxnorm"``."""
+
+
+@dataclass
+class RxnormCodeDetail:
+    """Canonical RxNorm concept record."""
+
+    rxcui: str
+    """RxNorm concept identifier."""
+
+    name: str
+    """Concept name."""
+
+    tty: str
+    """Term type (e.g. ``"IN"``, ``"BN"``, ``"SCD"``)."""
+
+    language: str
+    """Language code."""
+
+    synonyms: list[str] = field(default_factory=list)
+    """Synonym terms."""
+
+    cross_references: dict[str, list[str]] = field(default_factory=dict)
+    """Cross-reference IDs grouped by system: ``"umls"``, ``"snomed"``,
+    ``"icd10"``, ``"loinc"``."""
+
+
 # ── Reference Lookup ───────────────────────────────────────────────
 
-ReferenceSystem = Literal["icd-10-cm", "icd-11", "icf", "loinc"]
+ReferenceSystem = Literal[
+    "icd-10-cm",
+    "icd-11",
+    "icf",
+    "loinc",
+    "snomed-ct",
+    "umls",
+    "rxnorm",
+]
+"""Coding system slugs accepted by ``client.reference.lookup`` and
+``client.reference.search``."""
+
+SearchableReferenceSystem = Literal["snomed-ct", "umls", "rxnorm"]
+"""Coding system slugs accepted by ``client.reference.search``. JSON-backed
+systems (icd-10-cm, icd-11, icf, loinc) keep their per-system search."""
 
 
 @dataclass
@@ -894,9 +993,57 @@ class ReferenceLOINCRecord:
     system: Literal["loinc"] = "loinc"
 
 
+@dataclass
+class ReferenceSnomedRecord:
+    code: str
+    record: SnomedCodeDetail
+    system: Literal["snomed-ct"] = "snomed-ct"
+
+
+@dataclass
+class ReferenceUmlsRecord:
+    code: str
+    record: UmlsCodeDetail
+    system: Literal["umls"] = "umls"
+
+
+@dataclass
+class ReferenceRxnormRecord:
+    code: str
+    record: RxnormCodeDetail
+    system: Literal["rxnorm"] = "rxnorm"
+
+
 ReferenceCodeRecord = Union[
     ReferenceICD10Record,
     ReferenceICD11Record,
     ReferenceICFRecord,
     ReferenceLOINCRecord,
+    ReferenceSnomedRecord,
+    ReferenceUmlsRecord,
+    ReferenceRxnormRecord,
 ]
+
+
+@dataclass
+class ReferenceSearchHit:
+    """A single search hit returned by ``GET /v1/reference/{system}/search``."""
+
+    code: str
+    """Code in the searched system."""
+
+    label: str
+    """Display label (preferred term, name, etc.)."""
+
+    meta: str | None = None
+    """Optional system-specific metadata (semantic tag, term type)."""
+
+
+@dataclass
+class ReferenceSearchResponse:
+    """Response shape for ``GET /v1/reference/{system}/search``."""
+
+    query: str
+    system: SearchableReferenceSystem
+    count: int
+    results: list[ReferenceSearchHit] = field(default_factory=list)

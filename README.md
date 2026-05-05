@@ -12,6 +12,14 @@ Single dependency (`httpx`). Works in **Python 3.10+**.
 
 ---
 
+## What's new — 2026-05-05
+
+- **Phase 3 unified reference lookup.** A single `client.reference.lookup(system, code)` covers ICD-10-CM, ICD-11, ICF, LOINC, SNOMED CT, UMLS, and RxNorm. The legacy per-system getters (`icd10.get`, `icd11.get`, `icf.lookup`, `loinc.lookup`) keep working but the underlying routes now emit `Deprecation` and `Sunset` headers.
+- **Phase 4 SNOMED CT, UMLS, and RxNorm coverage.** Lookup canonical concept records (preferred terms, synonyms, semantic types) and search those vocabularies via `client.reference.search(system, query)`.
+- **Cross-references everywhere.** ICD-10, ICD-11, LOINC, SNOMED, UMLS, and RxNorm records all carry `cross_references` keyed by target system, so you can pivot between vocabularies without extra calls.
+
+---
+
 ## Why AutoICD API
 
 | | |
@@ -116,6 +124,43 @@ Default behavior runs all five capabilities. Pass `capabilities=["hcc"]` to run 
 > **`hcc_model`:** use `"v22"`, `"v28"`, or `"both"` (default). CMS PY2026 MA payment uses V22 and V28 as the two main community models. V24 is the ESRD-specific model and is not accepted here.
 
 Read more about the Audit endpoint at [autoicdapi.com/audit](https://autoicdapi.com/audit).
+
+### Unified Reference Lookup (ICD-10, ICD-11, ICF, LOINC, SNOMED, UMLS, RxNorm)
+
+One call to fetch canonical record data for any code in any supported system. The response is a tagged dataclass — switch on `result.system` to access the system-specific shape.
+
+```python
+icd10 = client.reference.lookup("icd-10-cm", "E11.9")
+print(icd10.record.long_description)
+print(icd10.record.cross_references)  # {"snomed": [...], "umls": [...], "rxnorm": [...]}
+
+concept = client.reference.lookup("snomed-ct", "44054006")
+print(concept.record.preferred_term)  # "Diabetes mellitus type 2"
+print(concept.record.semantic_tag)    # "disorder"
+
+cui = client.reference.lookup("umls", "C0011860")
+print(cui.record.preferred_name)
+print(cui.record.cross_references["snomed"])
+
+drug = client.reference.lookup("rxnorm", "860975")  # metformin 500 MG
+print(drug.record.name, drug.record.tty)
+```
+
+Supported `system` values: `"icd-10-cm"`, `"icd-11"`, `"icf"`, `"loinc"`, `"snomed-ct"`, `"umls"`, `"rxnorm"`.
+
+### Reference Search (SNOMED CT, UMLS, RxNorm)
+
+Free-text search the Neon-backed reference vocabularies. ICD-10, ICD-11, ICF, and LOINC keep their per-system search endpoints.
+
+```python
+hits = client.reference.search("snomed-ct", "type 2 diabetes", limit=5)
+for hit in hits.results:
+    print(hit.code, hit.label, hit.meta)
+    # 44054006 "Diabetes mellitus type 2 (disorder)" "disorder"
+
+cuis = client.reference.search("umls", "metformin")
+drugs = client.reference.search("rxnorm", "lisinopril 10 mg", limit=10)
+```
 
 ### Cross-Standard Code Translation
 
@@ -397,15 +442,22 @@ Full REST API documentation at [autoicdapi.com/docs](https://autoicdapi.com/docs
 
 | Method | Description |
 |--------|-------------|
-| `client.code(text, options?)` | Code clinical text to ICD-10-CM diagnoses |
+| `client.code(text, options=None)` | Code clinical text to ICD-10-CM diagnoses |
+| `client.audit(request)` | Chart audit (HCC gap capture, RADV, specificity, denial, problem list) |
+| `client.translate(request)` | Cross-standard code translation across ICD-10, ICD-11, SNOMED, UMLS, ICF |
 | `client.anonymize(text)` | De-identify PHI/PII in clinical text |
-| `client.icd10.search(query, options?)` | Search ICD-10-CM codes by description |
-| `client.icd10.get(code)` | Get details for an ICD-10-CM code (incl. ICD-11 crosswalk) |
-| `client.icd11.search(query, options?)` | Search ICD-11 codes by description |
-| `client.icd11.get(code)` | Get details for an ICD-11 code (incl. ICD-10 crosswalk) |
-| `client.icf.lookup(code)` | Get details for an ICF code |
-| `client.icf.search(query, options?)` | Search ICF codes by keyword |
+| `client.reference.lookup(system, code)` | Unified lookup across ICD-10-CM, ICD-11, ICF, LOINC, SNOMED CT, UMLS, RxNorm |
+| `client.reference.search(system, query, limit=20)` | Free-text search of SNOMED CT, UMLS, or RxNorm |
+| `client.icd10.search(query, options=None)` | Search ICD-10-CM codes by description |
+| `client.icd10.get(code)` | Get details for an ICD-10-CM code (deprecated — use `reference.lookup`) |
+| `client.icd11.search(query, options=None)` | Search ICD-11 codes by description |
+| `client.icd11.get(code)` | Get details for an ICD-11 code (deprecated — use `reference.lookup`) |
+| `client.icf.lookup(code)` | Get details for an ICF code (deprecated — use `reference.lookup`) |
+| `client.icf.search(query, limit=20)` | Search ICF codes by keyword |
 | `client.icf.core_set(icd10_code)` | Get ICF Core Set for an ICD-10 diagnosis |
+| `client.loinc.code(text, top_k=5)` | Code clinical text to LOINC lab/observation codes |
+| `client.loinc.lookup(code)` | Get details for a LOINC code (deprecated — use `reference.lookup`) |
+| `client.loinc.search(query, limit=20)` | Search LOINC codes by description |
 
 ---
 
@@ -453,7 +505,8 @@ from autoicd import (
 - [ICD-10 ↔ ICD-11 Crosswalk](https://autoicdapi.com/icd10-to-icd11) — Map codes between revisions
 - [ICD-10 Codes by Condition](https://autoicdapi.com/reference/icd-10/condition) — Find codes for common conditions
 - [TypeScript SDK](https://www.npmjs.com/package/autoicd) — `npm install autoicd`
-- [MCP Server](https://www.npmjs.com/package/autoicd-mcp) — For Claude Desktop, Cursor, VS Code
+- [AutoICD MCP Server](https://www.npmjs.com/package/autoicd-mcp) — For Claude Desktop, Cursor, VS Code, Windsurf, and the remote endpoint at `autoicdapi.com/api/mcp`
+- [Postman Collection](https://autoicdapi.com/docs) — Importable collection for the full REST surface
 - [SNOMED CT & UMLS Cross-References](https://autoicdapi.com/snomed-ct-umls) — Terminology mappings
 - [ICD-10-CM 2025 Code Set](https://www.cms.gov/medicare/coding-billing/icd-10-codes) — Official CMS reference
 

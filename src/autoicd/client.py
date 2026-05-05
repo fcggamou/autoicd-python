@@ -48,8 +48,18 @@ from .types import (
     ReferenceICD11Record,
     ReferenceICFRecord,
     ReferenceLOINCRecord,
+    ReferenceRxnormRecord,
+    ReferenceSearchHit,
+    ReferenceSearchResponse,
+    ReferenceSnomedRecord,
     ReferenceSystem,
+    ReferenceUmlsRecord,
+    RxnormCodeDetail,
+    SearchableReferenceSystem,
     SearchOptions,
+    SnomedCodeDetail,
+    UmlsAtomDetail,
+    UmlsCodeDetail,
     AuditCapability,
     AuditClaimContext,
     AuditCode,
@@ -235,7 +245,7 @@ class LOINCCodes:
 
 
 class ReferenceCodes:
-    """Sub-resource for unified cross-system reference lookups.
+    """Sub-resource for unified cross-system reference lookups and search.
 
     Supersedes the per-system getters (``icd10.get``, ``icd11.get``,
     ``icf.lookup``, ``loinc.lookup``). Those methods continue to work but
@@ -250,8 +260,10 @@ class ReferenceCodes:
         """Look up canonical reference data for a code in any supported system.
 
         Args:
-            system: One of ``"icd-10-cm"``, ``"icd-11"``, ``"icf"``, ``"loinc"``.
-            code: The code in the chosen system (e.g. ``"I50.23"``, ``"5A11"``).
+            system: One of ``"icd-10-cm"``, ``"icd-11"``, ``"icf"``, ``"loinc"``,
+                ``"snomed-ct"``, ``"umls"``, ``"rxnorm"``.
+            code: The code in the chosen system (e.g. ``"I50.23"``, ``"5A11"``,
+                ``"44054006"``, ``"C0011860"``, ``"860975"``).
 
         Returns:
             A discriminated ``ReferenceCodeRecord`` whose ``system`` field
@@ -262,6 +274,40 @@ class ReferenceCodes:
             f"/api/v1/reference/{quote(system, safe='')}/{quote(code, safe='')}"
         )
         return _parse_reference_code_record(data)
+
+    def search(
+        self,
+        system: SearchableReferenceSystem,
+        query: str,
+        limit: int = 20,
+    ) -> ReferenceSearchResponse:
+        """Free-text search SNOMED CT, UMLS, or RxNorm.
+
+        JSON-backed systems (icd-10-cm, icd-11, icf, loinc) keep their
+        per-system search endpoints (``client.icd10.search`` etc).
+
+        Args:
+            system: One of ``"snomed-ct"``, ``"umls"``, ``"rxnorm"``.
+            query: Search text.
+            limit: Maximum results (default 20, capped at 100).
+        """
+        params: dict[str, str] = {"q": query, "limit": str(limit)}
+        data = self._client._get(
+            f"/api/v1/reference/{quote(system, safe='')}/search?{urlencode(params)}"
+        )
+        return ReferenceSearchResponse(
+            query=data["query"],
+            system=data["system"],
+            count=data["count"],
+            results=[
+                ReferenceSearchHit(
+                    code=hit["code"],
+                    label=hit["label"],
+                    meta=hit.get("meta"),
+                )
+                for hit in data.get("results", [])
+            ],
+        )
 
 
 class AutoICD:
@@ -922,6 +968,47 @@ def _parse_translate_response(data: dict[str, Any]) -> TranslateResponse:
     )
 
 
+def _parse_snomed_code_detail(data: dict[str, Any]) -> SnomedCodeDetail:
+    return SnomedCodeDetail(
+        concept_id=data["concept_id"],
+        fsn=data["fsn"],
+        preferred_term=data["preferred_term"],
+        semantic_tag=data.get("semantic_tag", ""),
+        active=data.get("active", True),
+        synonyms=list(data.get("synonyms", [])),
+        cross_references=dict(data.get("cross_references", {})),
+    )
+
+
+def _parse_umls_code_detail(data: dict[str, Any]) -> UmlsCodeDetail:
+    return UmlsCodeDetail(
+        cui=data["cui"],
+        preferred_name=data["preferred_name"],
+        semantic_types=list(data.get("semantic_types", [])),
+        atoms=[
+            UmlsAtomDetail(
+                source_vocabulary=a["source_vocabulary"],
+                source_code=a["source_code"],
+                term_type=a["term_type"],
+                description=a["description"],
+            )
+            for a in data.get("atoms", [])
+        ],
+        cross_references=dict(data.get("cross_references", {})),
+    )
+
+
+def _parse_rxnorm_code_detail(data: dict[str, Any]) -> RxnormCodeDetail:
+    return RxnormCodeDetail(
+        rxcui=data["rxcui"],
+        name=data["name"],
+        tty=data.get("tty", ""),
+        language=data.get("language", ""),
+        synonyms=list(data.get("synonyms", [])),
+        cross_references=dict(data.get("cross_references", {})),
+    )
+
+
 def _parse_reference_code_record(data: dict[str, Any]) -> ReferenceCodeRecord:
     system = data.get("system")
     code = data.get("code", "")
@@ -934,4 +1021,10 @@ def _parse_reference_code_record(data: dict[str, Any]) -> ReferenceCodeRecord:
         return ReferenceICFRecord(code=code, record=_parse_icf_code_detail(record_data))
     if system == "loinc":
         return ReferenceLOINCRecord(code=code, record=_parse_loinc_code_detail(record_data))
+    if system == "snomed-ct":
+        return ReferenceSnomedRecord(code=code, record=_parse_snomed_code_detail(record_data))
+    if system == "umls":
+        return ReferenceUmlsRecord(code=code, record=_parse_umls_code_detail(record_data))
+    if system == "rxnorm":
+        return ReferenceRxnormRecord(code=code, record=_parse_rxnorm_code_detail(record_data))
     raise AutoICDError(0, f"Unknown reference system in response: {system!r}")
