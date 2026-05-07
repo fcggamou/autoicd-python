@@ -559,11 +559,18 @@ class LOINCCodingEntity:
 
 @dataclass
 class LOINCCodingResponse:
-    """Full LOINC coding response."""
+    """Full LOINC coding response.
+
+    The API now returns per-entity LOINC results under both ``entities``
+    (the canonical key, matching ``/v1/code`` and ``/v1/icd11/code``) and
+    ``results`` (the legacy key, kept for backward compatibility). Both
+    point at the same payload. New code should read ``entities``.
+    """
 
     text: str
     provider: str = "sapbert"
     entity_count: int = 0
+    entities: list[LOINCCodingEntity] = field(default_factory=list)
     results: list[LOINCCodingEntity] = field(default_factory=list)
 
 
