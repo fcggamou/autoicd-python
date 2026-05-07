@@ -504,7 +504,7 @@ from autoicd import (
 - [ICD-11 Code Directory](https://autoicdapi.com/reference/icd-11) - Browse the WHO ICD-11 MMS hierarchy
 - [ICD-10 ↔ ICD-11 Crosswalk](https://autoicdapi.com/icd10-to-icd11) - Map codes between revisions
 - [ICD-10 Codes by Condition](https://autoicdapi.com/reference/icd-10/condition) - Find codes for common conditions
-- [TypeScript SDK](https://www.npmjs.com/package/autoicd) - `npm install autoicd`
+- [TypeScript SDK](https://www.npmjs.com/package/autoicd-js) - `npm install autoicd-js`
 - [AutoICD MCP Server](https://www.npmjs.com/package/autoicd-mcp) - For Claude Desktop, Cursor, VS Code, Windsurf, and the remote endpoint at `autoicdapi.com/api/mcp`
 - [Postman Collection](https://autoicdapi.com/docs) - Importable collection for the full REST surface
 - [SNOMED CT & UMLS Cross-References](https://autoicdapi.com/snomed-ct-umls) - Terminology mappings
